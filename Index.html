@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NICU PN + IV Calculator</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+    h1 { color: #0077aa; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select { width: 100%; padding: 5px; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #eef; }
+    .warning { color: red; font-weight: bold; }
+    .output { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>NICU PN + IV Infusion Calculator</h1>
+
+  <label>Date & Time of Birth:</label>
+  <input type="datetime-local" id="dob" />
+
+  <label>Current Date & Time:</label>
+  <input type="datetime-local" id="now" />
+
+  <label>Birth Weight (kg):</label>
+  <input type="number" step="0.01" id="weight" />
+
+  <label>Total Fluid Volume (mL/kg/day):</label>
+  <input type="number" id="fluid" />
+
+  <label>Protein Target (g/kg/day):</label>
+  <input type="number" step="0.1" id="protein" />
+
+  <label>Lipid Target (g/kg/day):</label>
+  <input type="number" step="0.1" id="lipid" />
+
+  <label>PN Fluid Type:</label>
+  <select id="pnType">
+    <option value="starter">Starter (100mL)</option>
+    <option value="maintenance">Maintenance (200mL)</option>
+    <option value="concentrated">Concentrated (300mL)</option>
+  </select>
+
+  <hr>
+
+  <h2>IV Drip Info</h2>
+
+  <label>Sodium Chloride Strength (e.g. 0.2 for 1/5 NS):</label>
+  <input type="number" step="0.01" id="nacl" />
+
+  <label>KCl added (mmol per pint):</label>
+  <input type="number" step="1" id="kcl" />
+
+  <label>Dextrose Concentration (%):</label>
+  <input type="number" step="1" id="dextrose" />
+
+  <label>IV Drip Rate (mL/hr):</label>
+  <input type="number" id="ivRate" />
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div class="output" id="results"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
