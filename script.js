@@ -29,40 +29,42 @@ function calculate() {
   const pnType = document.getElementById("pnType").value;
   const ivDex = parseFloat(document.getElementById("ivDextrose").value);
   const ivRate = parseFloat(document.getElementById("ivRate").value);
+  const ivKcl = parseFloat(document.getElementById("ivKcl").value); // mmol/L
 
   const selectedPN = pnData[pnType];
   const totalPNVol = wt * tf;
 
-  // Lipid calculation
   const lipid = lipidData[dol] || lipidData.default;
   const lipidVol = lipid.vol * wt;
-  const lipidG = lipid.g * wt;
   const lipidKcal = lipid.kcal * wt;
 
-  // PN totals
   const totalAA = selectedPN.aa * totalPNVol / 100;
   const totalGlucose = selectedPN.glucose * totalPNVol / 100;
   const totalNa = selectedPN.sodium * totalPNVol / 100;
   const totalP = selectedPN.phosphate * totalPNVol / 100;
-  const totalK = selectedPN.potassium * totalPNVol / 100;
+  const totalK_PN = selectedPN.potassium * totalPNVol / 100;
   const totalCa = selectedPN.calcium * totalPNVol / 100;
   const totalMg = selectedPN.magnesium * totalPNVol / 100;
-  const totalCl = selectedPN.chloride * totalPNVol / 100;
+  const totalCl_PN = selectedPN.chloride * totalPNVol / 100;
   const totalAc = selectedPN.acetate * totalPNVol / 100;
   const totalTE = selectedPN.traceElements ? selectedPN.traceElements * totalPNVol / 100 : 0;
   const totalKcalPN = selectedPN.kcal * totalPNVol / 100;
 
-  // GDR (mg/kg/min) = (Infusion rate x dextrose%) / (weight x 6)
+  const totalIVVol = ivRate * 24;
+  const totalK_IV = (ivKcl / 1000) * totalIVVol; // mmol from KCl in IV
+  const totalCl_IV = totalK_IV; // assuming KCl only (1 mmol K = 1 mmol Cl)
+
+  const totalK = totalK_PN + totalK_IV;
+  const totalCl = totalCl_PN + totalCl_IV;
+
   const gdrPN = ((totalPNVol / 24) * selectedPN.dextrosePercent) / (wt * 6);
   const gdrIV = (ivRate * ivDex) / (wt * 6);
   const totalGDR = gdrPN + gdrIV;
 
-  // Calories
-  const ivKcal = ivDex * ivRate * 0.0348 * 24; // kcal/day from IV
+  const ivKcal = ivDex * ivRate * 0.0348 * 24;
   const totalKcal = totalKcalPN + lipidKcal + ivKcal;
 
-  // Fluid check
-  const expectedTotal = totalPNVol + lipidVol + (ivRate * 24);
+  const expectedTotal = totalPNVol + lipidVol + totalIVVol;
   const intendedTotal = wt * tf;
   const warning = expectedTotal < intendedTotal
     ? `<span style="color:red;">⚠️ Total fluid is ${expectedTotal.toFixed(1)} mL/day, below intended ${intendedTotal.toFixed(1)} mL/day</span>`
@@ -72,8 +74,7 @@ function calculate() {
     <h2>Results</h2>
     <b>PN Volume:</b> ${totalPNVol.toFixed(1)} mL/day<br>
     <b>Lipid Volume:</b> ${lipidVol.toFixed(1)} mL/day<br>
-    <b>Lipid kcal:</b> ${lipidKcal.toFixed(1)} kcal/day<br>
-    <b>IV Volume:</b> ${(ivRate * 24).toFixed(1)} mL/day<br><br>
+    <b>IV Volume:</b> ${totalIVVol.toFixed(1)} mL/day<br><br>
 
     <b>Total Calories:</b> ${totalKcal.toFixed(1)} kcal/day<br>
     <b>GDR:</b> ${totalGDR.toFixed(2)} mg/kg/min<br><br>
@@ -81,11 +82,11 @@ function calculate() {
     <b>Amino Acid:</b> ${totalAA.toFixed(2)} g/day (${(totalAA/wt).toFixed(2)} g/kg/day)<br>
     <b>Glucose:</b> ${totalGlucose.toFixed(2)} g/day (${(totalGlucose/wt).toFixed(2)} g/kg/day)<br>
     <b>Sodium:</b> ${totalNa.toFixed(2)} mmol/day (${(totalNa/wt).toFixed(2)} mmol/kg/day)<br>
-    <b>Potassium:</b> ${totalK.toFixed(2)} mmol/day (${(totalK/wt).toFixed(2)} mmol/kg/day)<br>
+    <b>Potassium (PN + IV):</b> ${totalK.toFixed(2)} mmol/day (${(totalK/wt).toFixed(2)} mmol/kg/day)<br>
+    <b>Chloride (PN + IV):</b> ${totalCl.toFixed(2)} mmol/day (${(totalCl/wt).toFixed(2)} mmol/kg/day)<br>
     <b>Phosphate:</b> ${totalP.toFixed(2)} mmol/day (${(totalP/wt).toFixed(2)} mmol/kg/day)<br>
     <b>Calcium:</b> ${totalCa.toFixed(2)} mmol/day (${(totalCa/wt).toFixed(2)} mmol/kg/day)<br>
     <b>Magnesium:</b> ${totalMg.toFixed(2)} mmol/day (${(totalMg/wt).toFixed(2)} mmol/kg/day)<br>
-    <b>Chloride:</b> ${totalCl.toFixed(2)} mmol/day (${(totalCl/wt).toFixed(2)} mmol/kg/day)<br>
     <b>Acetate:</b> ${totalAc.toFixed(2)} mmol/day (${(totalAc/wt).toFixed(2)} mmol/kg/day)<br>
     <b>Trace Elements:</b> ${totalTE.toFixed(2)} mL/day<br><br>
     ${warning}
