@@ -69,13 +69,11 @@ function calculate() {
   const proteinPerKgDay = (aaDelivered / weight).toFixed(1);
 
   const pnGlucose = (pnVolumePerDay * pnData.glucose) / 100;
-    const ivGlucose = ivRate > 0 ? ((parseFloat(dextrose) / 100) * ivRate * 24) : 0;
+  const ivGlucose = ivRate > 0 ? ((parseFloat(dextrose) / 100) * ivRate * 24) : 0;
   const totalGlucose = pnGlucose + ivGlucose;
 
-  // ✅ GDR using your center's formula
-  const pnRateMlh = pnRate; // mL/hr
-  const pnDextrose = pnData.glucose; // g/100 mL = %
-  const pnGDR = (pnRateMlh * pnDextrose) / (weight * 6);
+  // ✅ GDR using center's formula
+  const pnGDR = (pnRate * pnData.glucose) / (weight * 6);
   const ivGDR = ivRate > 0 ? (ivRate * parseFloat(dextrose)) / (weight * 6) : 0;
   const totalGDR = (pnGDR + ivGDR).toFixed(1);
 
