@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h1>NICU Calculator</h1>
+  <h1>NICU Fluid Calculator</h1>
 
   <div class="section">
     <h2>1. Baby Info</h2>
@@ -25,8 +25,8 @@
 
   <div class="section">
     <h2>2. Feeding</h2>
-    <label><input type="radio" name="feedTypeChoice" value="full" checked onclick="toggleFeedInputs()"> Full Feeds</label>
-    <label><input type="radio" name="feedTypeChoice" value="partial" onclick="toggleFeedInputs()"> Partial Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="full" checked onclick="toggleSections()"> Full Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="partial" onclick="toggleSections()"> Partial Feeds</label>
     <div id="feedInputs">
       <label>Feed Volume per Feed (mL): <input type="number" id="feedVolume" step="1" /></label>
       <label>Feeding Interval (hours):
@@ -43,7 +43,7 @@
     </div>
   </div>
 
-  <div class="section">
+  <div class="section" id="pnSection">
     <h2>3. Parenteral Nutrition (PN)</h2>
     <label>Protein Target (g/kg/day): <input type="number" id="protein" step="0.1" /></label>
     <label>PN Type:
@@ -55,14 +55,19 @@
     </label>
   </div>
 
-  <div class="section">
-    <h2>4. IV Drip</h2>
+  <div class="section" id="lipidSection">
+    <h2>4. Lipid</h2>
+    <label>Lipid Target (g/kg/day): <input type="number" id="lipidTarget" step="0.01" /></label>
+  </div>
+
+  <div class="section" id="ivSection">
+    <h2>5. IV Drip</h2>
     <label>IV Rate (mL/hr): <input type="number" id="ivRate" step="0.1" /></label>
     <label>Sodium Strength:
       <select id="nacl">
         <option value="0">None</option>
         <option value="0.2">1/5 NS (0.2%)</option>
-        <option value="0.45">½ NS (0.45%)</option>
+        <option value="0.45">½ NS (0.45%)</option>
         <option value="0.9">NS (0.9%)</option>
         <option value="3">HS (3%)</option>
       </select>
@@ -71,21 +76,19 @@
     <label>Dextrose %: <input type="number" id="dextrose" step="1" /></label>
   </div>
 
-  <div class="section">
-    <h2>5. Lipid Target</h2>
-    <label>Lipid Target (g/kg/day): <input type="number" id="lipidTarget" step="0.01" /></label>
-  </div>
-
   <button onclick="calculate()">Calculate</button>
   <div id="results"></div>
 
   <script src="script.js"></script>
   <script>
-    function toggleFeedInputs() {
-      const show = document.querySelector('input[name="feedTypeChoice"]:checked').value === 'partial';
-      document.getElementById('feedInputs').style.display = show ? 'block' : 'none';
+    function toggleSections() {
+      const partial = document.querySelector('input[name="feedTypeChoice"]:checked').value === 'partial';
+      document.getElementById('feedInputs').style.display = partial ? 'block' : 'none';
+      document.getElementById('pnSection').style.display = partial ? 'block' : 'none';
+      document.getElementById('lipidSection').style.display = partial ? 'block' : 'none';
+      document.getElementById('ivSection').style.display = partial ? 'block' : 'none';
     }
-    window.onload = toggleFeedInputs;
+    window.onload = toggleSections;
   </script>
 </body>
 </html>
