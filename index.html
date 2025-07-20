@@ -15,7 +15,7 @@
 </head>
 <body>
 
-  <h1>NICU Fluid & Feeding Calculator</h1>
+  <h1>NICU Fluid & Nutrition Calculator</h1>
 
   <div class="section">
     <label>Date & Time of Birth:
@@ -37,8 +37,8 @@
 
   <div class="section">
     <label>Feeding Type:</label>
-    <label><input type="radio" name="feedTypeChoice" value="full" checked onclick="toggleSections()"> Full Feeds</label>
-    <label><input type="radio" name="feedTypeChoice" value="not_full" onclick="toggleSections()"> Not Full Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="full" checked onchange="toggleSections()"> Full Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="not_full" onchange="toggleSections()"> Not Full Feeds</label>
 
     <label>Feed Type:
       <select id="feedTypeSelect">
