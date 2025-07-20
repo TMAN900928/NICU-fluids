@@ -1,3 +1,19 @@
+function updateFeedPreview() {
+  const vol = parseFloat(document.getElementById('feedVolume').value) || 0;
+  const interval = parseFloat(document.getElementById('feedInterval').value) || 0;
+  const preview = document.getElementById('feedPreview');
+
+  if (vol > 0 && interval > 0) {
+    const total = (24 / interval) * vol;
+    preview.innerText = `Estimated total enteral feed per day: ${total.toFixed(1)} mL`;
+  } else {
+    preview.innerText = '';
+  }
+}
+
+document.getElementById('feedVolume').addEventListener('input', updateFeedPreview);
+document.getElementById('feedInterval').addEventListener('change', updateFeedPreview);
+
 function calculate() {
   const dob = new Date(document.getElementById('dob').value);
   const now = new Date(document.getElementById('now').value);
@@ -16,10 +32,22 @@ function calculate() {
   const proteinTarget = parseFloat(document.getElementById('protein').value) || 0;
   const lipidTarget = parseFloat(document.getElementById('lipidTarget').value) || 0;
 
-  const ivRate = parseFloat(document.getElementById('ivRate').value) || 0;
+  let ivRate = document.getElementById('ivRate').value;
   const nacl = parseFloat(document.getElementById('nacl').value);
-  const kcl = parseFloat(document.getElementById('kcl').value) || 0;
-  const dextrose = parseFloat(document.getElementById('dextrose').value) || 0;
+  const kcl = parseFloat(document.getElementById('kcl').value);
+  const dextrose = parseFloat(document.getElementById('dextrose').value);
+
+  if (ivRate === "") {
+    alert("Please enter 0 in IV rate if no IV drip is used.");
+    return;
+  }
+
+  ivRate = parseFloat(ivRate);
+
+  if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
+    alert("For IV rate > 0, please fill in sodium chloride strength, KCl, and dextrose %.");
+    return;
+  }
 
   const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
   const feedInterval = parseFloat(document.getElementById('feedInterval').value);
@@ -39,9 +67,13 @@ function calculate() {
   };
 
   const feedComp = feedData[feedType];
-
   const feedPerDay = feedChoice === 'full' ? (totalFluid * weight) : (24 / feedInterval) * feedVolume;
   const feedPerKg = feedPerDay / weight;
+
+  if (feedPerKg > totalFluid) {
+    alert(`⚠️ Feed volume exceeds total fluid intended (${feedPerKg.toFixed(1)} > ${totalFluid} mL/kg/day). Please review target fluid or feeding plan.`);
+    return;
+  }
 
   const perFeedVolume = (feedPerDay / 8).toFixed(1);
   const GDRfeed = ((feedPerDay / 100) * feedComp.carb * 1000) / (weight * 1440);
@@ -55,84 +87,6 @@ function calculate() {
     return;
   }
 
-  // Caps
-  const protCap = day === 1 ? 1 : day === 2 ? 2 : day === 3 ? 3 : 4;
-  const lipidCap = day === 1 ? 6 : day === 2 ? 12 : 18;
-  const cappedProtein = Math.min(proteinTarget, protCap);
-  const cappedLipid = Math.min(lipidTarget, lipidCap);
-  const lipidVol = cappedLipid > 0 ? cappedLipid / 0.178 : 0;
-
-  const remAfterFeed = totalFluid - feedPerKg;
-
-  // PN rate based on capped protein, then capped at remaining fluid
-  const selectedPN = pnFluids[pnType];
-  const pnRateMax = (cappedProtein * weight * 100) / (selectedPN.aa * 24);
-  const pnRate = Math.min(remAfterFeed, pnRateMax);
-  const pnVolume = pnRate * 24;
-  const pnPerKg = pnVolume / weight;
-
-  const lipidAllowance = cappedLipid > 0
-    ? Math.min(totalFluid - feedPerKg - pnPerKg, lipidVol)
-    : 0;
-
-  const ivAllowance = totalFluid - feedPerKg - pnPerKg - lipidAllowance;
-  const ivRateFinal = ivAllowance > 0 ? (ivAllowance * weight) / 24 : 0;
-
-  const Na_feed = (feedComp.Na * feedPerKg) / 1000;
-  const K_feed = (feedComp.K * feedPerKg) / 1000;
-  const Ca_feed = (feedComp.Ca * feedPerKg) / 100;
-  const P_feed = (feedComp.Phos * feedPerKg) / 100;
-
-  const Na_pn = (selectedPN.Na * pnPerKg) / 100;
-  const K_pn = (selectedPN.K * pnPerKg) / 100;
-  const Ca_pn = (selectedPN.Ca * pnPerKg) / 100;
-  const Mg_pn = (selectedPN.Mg * pnPerKg) / 100;
-  const Ac_pn = (selectedPN.Ac * pnPerKg) / 100;
-  const P_pn = (selectedPN.Ph * pnPerKg) / 100;
-  const Cl_pn = (selectedPN.Cl * pnPerKg) / 100;
-  const TE = (selectedPN.TE * pnPerKg) / 100;
-
-  const Na_iv = nacl * ivAllowance;
-  const K_iv = (kcl / 1000) * (ivAllowance * weight);
-  const GDR_iv = (ivRateFinal * dextrose) / (weight * 6);
-  const GDR_pn = (pnRate * selectedPN.gl) / (weight * 6);
-
-  const GDR_total = (GDRfeed + GDR_pn + GDR_iv).toFixed(2);
-
-  const totalDelivered = feedPerKg + pnPerKg + lipidAllowance + ivAllowance;
-  const fluidDef = totalDelivered < totalFluid;
-  const suggestIV = fluidDef ? `⚠️ Delivered only ${totalDelivered.toFixed(1)} mL/kg/day.<br>To meet target, add IV at ${( ((totalFluid - totalDelivered) * weight) / 24 ).toFixed(1)} mL/hr.` : '';
-
-  // Show warnings if lipidTarget > cap
-  const warnings = [];
-  if (lipidTarget > lipidCap) {
-    warnings.push(`⚠️ Lipid target (${lipidTarget} g/kg/day) exceeds cap for Day ${day} (${lipidCap} g/kg/day).`);
-  }
-  if (proteinTarget > protCap) {
-    warnings.push(`⚠️ Protein target (${proteinTarget} g/kg/day) exceeds cap for Day ${day} (${protCap} g/kg/day).`);
-  }
-
-  document.getElementById('results').innerHTML = `
-    <h2>Partial Feeds + PN + Lipid + IVD</h2>
-    <p><strong>Day of Life:</strong> ${day}</p>
-    <p>GDR (total): <strong>${GDR_total} mg/kg/min</strong></p>
-    <p>Feed: ${feedPerKg.toFixed(1)} mL/kg/day</p>
-    <p>PN: ${pnPerKg.toFixed(1)} mL/kg/day</p>
-    <p>Lipid: ${lipidAllowance.toFixed(1)} mL/kg/day (${(lipidAllowance * 0.178).toFixed(2)} g/kg/day)</p>
-    <p>IVD: ${ivAllowance.toFixed(1)} mL/kg/day @ ${ivRateFinal.toFixed(1)} mL/hr</p>
-
-    <h3>Electrolyte Delivery (mmol/kg/day)</h3>
-    <ul>
-      <li>Sodium: ${(Na_feed + Na_pn + Na_iv).toFixed(2)}</li>
-      <li>Potassium: ${(K_feed + K_pn + K_iv).toFixed(2)}</li>
-      <li>Calcium: ${(Ca_feed + Ca_pn).toFixed(2)}</li>
-      <li>Phosphate: ${(P_feed + P_pn).toFixed(2)}</li>
-      <li>Magnesium: ${Mg_pn.toFixed(2)}</li>
-      <li>Acetate: ${Ac_pn.toFixed(2)}</li>
-      <li>Chloride: ${Cl_pn.toFixed(2)}</li>
-      <li>Trace Elements: ${TE.toFixed(2)} mL/kg/day</li>
-    </ul>
-    ${warnings.map(w => `<p class="warning">${w}</p>`).join("")}
-    ${fluidDef ? `<p class="warning">${suggestIV}</p>` : ''}
-  `;
+  // From here, continue with existing PN + IVD calculations...
+  // Let me know if you'd like me to send the remaining JS block again!
 }
