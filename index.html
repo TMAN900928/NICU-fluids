@@ -25,8 +25,8 @@
 
   <div class="section">
     <h3>Feeding</h3>
-    <label><input type="radio" name="feedTypeChoice" value="full" checked> Full Feeds</label><br>
-    <label><input type="radio" name="feedTypeChoice" value="partial"> Not Full Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="full" checked onchange="toggleSections()"> Full Feeds</label><br>
+    <label><input type="radio" name="feedTypeChoice" value="partial" onchange="toggleSections()"> Not Full Feeds</label>
 
     <div id="feedInputs">
       <label>Feed Volume per feed (mL): <input type="number" id="feedVolume" step="0.1"></label>
@@ -64,7 +64,7 @@
     <label>Lipid Target (g/kg/day): <input type="number" id="lipidTarget" step="0.1" value="0"></label>
   </div>
 
-  <div class="section">
+  <div class="section" id="ivSection">
     <h3>IV Drip (if used)</h3>
     <label>IV Rate (mL/hr): <input type="number" id="ivRate" step="0.1" placeholder="Enter 0 if not used"></label>
     <label>Sodium Chloride Strength (%): <input type="number" id="nacl" step="0.1" placeholder="e.g. 0.2 for 1/5 NS"></label>
