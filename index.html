@@ -5,61 +5,159 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NICU PN + IV Calculator</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-    h1 { color: #0077aa; }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select { width: 100%; padding: 5px; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #eef; }
-    .warning { color: red; font-weight: bold; margin-top: 10px; }
-    .output { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+    }
+    h2 {
+      margin-top: 30px;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .warning {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
   </style>
 </head>
 <body>
   <h1>NICU PN + IV Calculator</h1>
 
-  <label>Date & Time of Birth:</label>
-  <input type="datetime-local" id="dob" />
+  <!-- SECTION 1: BABY INFO -->
+  <div class="section">
+    <h2>1. Baby Information</h2>
+    <label>Date & Time of Birth:
+      <input type="datetime-local" id="dob" />
+    </label>
+    <label>Current Date & Time:
+      <input type="datetime-local" id="now" />
+    </label>
+    <label>Birth Weight (kg):
+      <input type="number" step="0.01" id="weight" />
+    </label>
+    <label>Total Fluid Intended (mL/kg/day):
+      <input type="number" step="0.1" id="fluid" />
+    </label>
+  </div>
 
-  <label>Current Date & Time:</label>
-  <input type="datetime-local" id="now" />
+  <!-- SECTION 2: FEEDING INFO -->
+  <div class="section">
+    <h2>2. Feeding</h2>
+    <label>
+      <input type="radio" name="feedTypeChoice" value="full" onclick="toggleFeedInputs()" />
+      Full feeds (auto 3-hourly based on total fluid)
+    </label>
+    <label>
+      <input type="radio" name="feedTypeChoice" value="partial" onclick="toggleFeedInputs()" checked />
+      Not full feeds (enter feed volume + interval)
+    </label>
 
-  <label>Baby's Weight (kg):</label>
-  <input type="number" step="0.01" id="weight" />
+    <div id="feedInputs">
+      <label>Feed Volume per Feed (mL):
+        <input type="number" id="feedVolume" />
+      </label>
+      <label>Feeding Interval (hours):
+        <select id="feedInterval">
+          <option value="1">1-hourly</option>
+          <option value="2">2-hourly</option>
+          <option value="3" selected>3-hourly</option>
+          <option value="4">4-hourly</option>
+        </select>
+      </label>
+      <label>Feed Type:
+        <select id="feedTypeSelect">
+          <option value="preterm_breastmilk">Preterm Breastmilk</option>
+          <option value="preterm_formula">Preterm Formula</option>
+          <option value="mature_breastmilk">Mature Breastmilk</option>
+          <option value="standard_formula">Standard Formula</option>
+        </select>
+      </label>
+    </div>
+  </div>
 
-  <label>Total Fluid Volume (mL/kg/day):</label>
-  <input type="number" step="0.1" id="fluid" />
+  <!-- SECTION 3: PN INPUTS -->
+  <div class="section" id="pnSection">
+    <h2>3. Parenteral Nutrition (PN)</h2>
+    <label>Protein Target (g/kg/day):
+      <input type="number" id="protein" step="0.1" />
+    </label>
+    <label>PN Fluid Type:
+      <select id="pnType">
+        <option value="starter">Starter</option>
+        <option value="maintenance">Maintenance (no acetate)</option>
+        <option value="concentrated">Maintenance (with acetate)</option>
+      </select>
+    </label>
+  </div>
 
-  <label>Protein Target (g/kg/day):</label>
-  <input type="number" step="0.1" id="protein" />
-
-  <label>PN Fluid Type:</label>
-  <select id="pnType">
-    <option value="starter">Starter</option>
-    <option value="maintenance">Maintenance (No Acetate)</option>
-    <option value="concentrated">Concentrated (With Acetate)</option>
-  </select>
-
-  <hr>
-  <h2>IV Drip Info</h2>
-
-  <label>IV Drip Rate (mL/hr):</label>
-  <input type="number" step="0.1" id="ivRate" />
-
-  <label>Sodium Chloride Strength (e.g. 0.2 = 1/5 NS, 0.45 = ½ NS, 0.9 = NS, 3.0 = HS):</label>
-  <input type="number" step="0.01" id="nacl" />
-
-  <label>KCl added (mmol per pint):</label>
-  <input type="number" step="1" id="kcl" />
-
-  <label>Dextrose Concentration (%):</label>
-  <input type="number" step="1" id="dextrose" />
+  <!-- SECTION 4: IV DRIP INPUTS -->
+  <div class="section" id="ivSection">
+    <h2>4. IV Drip (if used)</h2>
+    <label>IV Rate (mL/hr):
+      <input type="number" id="ivRate" />
+    </label>
+    <label>Sodium Chloride Strength (e.g. 1/5NS = 0.2, ½NS = 0.5, NS = 0.9, HS = 3.0):
+      <input type="number" step="0.1" id="nacl" />
+    </label>
+    <label>KCl Added (mmol per pint):
+      <input type="number" step="1" id="kcl" />
+    </label>
+    <label>Dextrose % (e.g. 10 for D10W):
+      <input type="number" step="1" id="dextrose" />
+    </label>
+  </div>
 
   <button onclick="calculate()">Calculate</button>
 
-  <div class="output" id="results"></div>
+  <div id="results" class="section"></div>
 
   <script src="script.js"></script>
+
+  <script>
+    function toggleFeedInputs() {
+      const feedTypeChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
+      const feedInputs = document.getElementById('feedInputs');
+      const pnSection = document.getElementById('pnSection');
+      const ivSection = document.getElementById('ivSection');
+
+      if (feedTypeChoice === "full") {
+        feedInputs.style.display = "none";
+        pnSection.style.display = "none";
+        ivSection.style.display = "none";
+      } else {
+        feedInputs.style.display = "block";
+        pnSection.style.display = "block";
+        ivSection.style.display = "block";
+      }
+    }
+
+    window.onload = toggleFeedInputs;
+  </script>
 </body>
 </html>
