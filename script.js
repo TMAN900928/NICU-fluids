@@ -34,25 +34,6 @@ function calculate() {
   const totalFluid = parseFloat(document.getElementById('fluid').value);
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
 
-  // PN caps
-  let maxProtein = 4, maxLipid = 18;
-  if (day === 1) { maxProtein = 1; maxLipid = 6; }
-  else if (day === 2) { maxProtein = 2; maxLipid = 12; }
-  else if (day === 3) { maxProtein = 3; maxLipid = 18; }
-
-  const pnTypeSelect = document.getElementById('pnType');
-  const starterOpt = pnTypeSelect.querySelector('option[value="starter"]');
-  if (day > 1 && starterOpt) starterOpt.remove();
-
-  const pnType = document.getElementById('pnType').value;
-  const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
-  const lipidTarget = Math.min(parseFloat(document.getElementById('lipidTarget').value) || 0, maxLipid * 0.178);
-
-  let ivRate = parseFloat(document.getElementById('ivRate').value);
-  const nacl = parseFloat(document.getElementById('nacl').value);
-  const kcl = parseFloat(document.getElementById('kcl').value);
-  const dextrose = parseFloat(document.getElementById('dextrose').value);
-
   const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
   const feedInterval = parseFloat(document.getElementById('feedInterval').value);
   const feedType = document.getElementById('feedTypeSelect').value;
@@ -85,6 +66,32 @@ function calculate() {
     return;
   }
 
+  // === Begin PN / IVD logic ===
+
+  // Age-based caps
+  let maxProtein = 4, maxLipid = 18;
+  if (day === 1) { maxProtein = 1; maxLipid = 6; }
+  else if (day === 2) { maxProtein = 2; maxLipid = 12; }
+  else if (day === 3) { maxProtein = 3; maxLipid = 18; }
+
+  const pnTypeSelect = document.getElementById('pnType');
+  const starterOpt = pnTypeSelect.querySelector('option[value="starter"]');
+  if (day > 1 && starterOpt) starterOpt.remove();
+
+  const pnType = document.getElementById('pnType').value;
+  const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
+  const lipidTarget = Math.min(parseFloat(document.getElementById('lipidTarget').value) || 0, maxLipid * 0.178);
+
+  const ivRate = parseFloat(document.getElementById('ivRate').value);
+  const nacl = parseFloat(document.getElementById('nacl').value);
+  const kcl = parseFloat(document.getElementById('kcl').value);
+  const dextrose = parseFloat(document.getElementById('dextrose').value);
+
+  if (isNaN(ivRate)) return alert("Please enter 0 in IV rate if no IV drip is used.");
+  if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
+    return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
+  }
+
   const pnFluids = {
     starter: { aa: 3.3, gl: 10, Na: 3, K: 0, Ca: 1.4, Mg: 0.25, Cl: 0, Ac: 0, Ph: 1.5, TE: 0, kcal: 53.2 },
     maintenance: { aa: 3.0, gl: 10, Na: 3, K: 2, Ca: 0.15, Mg: 0.22, Cl: 2, Ac: 0, Ph: 1.5, TE: 0.74, kcal: 52 },
@@ -94,20 +101,13 @@ function calculate() {
 
   const pnVolume = (proteinTarget * 100) / pn.aa;
   const lipidVolume = (lipidTarget / 0.178);
-
-  let ivVolume = 0, GDRivd = 0;
-  if (feedChoice !== "full") {
-    if (isNaN(ivRate)) return alert("Please enter 0 in IV rate if no IV drip is used.");
-    if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
-      return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
-    }
-    ivVolume = (ivRate * 24) / weight;
-    GDRivd = (((ivVolume / 100) * dextrose * 1000) / (weight * 1440));
-  }
+  const ivVolume = (ivRate * 24) / weight;
+  const GDRivd = ((ivVolume / 100) * dextrose * 1000) / (weight * 1440);
+  const GDRpn = ((pnVolume / 100) * pn.gl * 1000) / (weight * 1440);
 
   const totalDelivered = feedPerKg + pnVolume + lipidVolume + ivVolume;
   const fluidDiff = totalFluid - totalDelivered;
-  const GDRpn = ((pnVolume / 100) * pn.gl * 1000) / (weight * 1440);
+
   const kcalPn = (pnVolume * pn.kcal) / 100;
   const kcalLipid = lipidVolume * 2;
   const kcalTotal = kcalPn + kcalLipid + feedKcal;
