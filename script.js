@@ -1,11 +1,9 @@
-// Feed Section Toggle
 function toggleSections() {
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
   document.getElementById('pnSection').style.display = feedChoice === 'full' ? 'none' : 'block';
   document.getElementById('ivSection').style.display = feedChoice === 'full' ? 'none' : 'block';
 }
 
-// Feed Preview
 function updateFeedPreview() {
   const vol = parseFloat(document.getElementById('feedVolume').value) || 0;
   const interval = parseFloat(document.getElementById('feedInterval').value) || 0;
@@ -23,7 +21,6 @@ document.getElementById('feedVolume').addEventListener('input', updateFeedPrevie
 document.getElementById('feedInterval').addEventListener('change', updateFeedPreview);
 toggleSections();
 
-// Main Calculator
 function calculate() {
   const dob = new Date(document.getElementById('dob').value);
   const now = new Date(document.getElementById('now').value);
@@ -34,13 +31,12 @@ function calculate() {
   const totalFluid = parseFloat(document.getElementById('fluid').value);
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
 
-  // PN cap rules
+  // PN caps
   let maxProtein = 4, maxLipid = 18;
   if (day === 1) { maxProtein = 1; maxLipid = 6; }
   else if (day === 2) { maxProtein = 2; maxLipid = 12; }
   else if (day === 3) { maxProtein = 3; maxLipid = 18; }
 
-  // Hide starter PN if > 24h
   const pnTypeSelect = document.getElementById('pnType');
   const starterOpt = pnTypeSelect.querySelector('option[value="starter"]');
   if (day > 1 && starterOpt) starterOpt.remove();
@@ -49,20 +45,11 @@ function calculate() {
   const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
   const lipidTarget = Math.min(parseFloat(document.getElementById('lipidTarget').value) || 0, maxLipid * 0.178);
 
-  // IVD
-  let ivRate = document.getElementById('ivRate').value;
-  if (ivRate === "") return alert("Please enter 0 in IV rate if no IV drip is used.");
-  ivRate = parseFloat(ivRate);
-
+  let ivRate = parseFloat(document.getElementById('ivRate').value);
   const nacl = parseFloat(document.getElementById('nacl').value);
   const kcl = parseFloat(document.getElementById('kcl').value);
   const dextrose = parseFloat(document.getElementById('dextrose').value);
 
-  if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
-    return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
-  }
-
-  // Feed Info
   const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
   const feedInterval = parseFloat(document.getElementById('feedInterval').value);
   const feedType = document.getElementById('feedTypeSelect').value;
@@ -89,13 +76,12 @@ function calculate() {
     document.getElementById('results').innerHTML = `
       <h2>Full Feeds</h2>
       <p><strong>Feed Volume (3-hourly):</strong> ${(feedPerDay / 8).toFixed(1)} mL</p>
-      <p><strong>GDR (mg/kg/min):</strong> ${GDRfeed.toFixed(2)}</p>
+      <p><strong>GDR (Glucose Delivery Rate):</strong> ${GDRfeed.toFixed(2)} mg/kg/min</p>
       <p><strong>Calories from Feeds:</strong> ${feedKcal.toFixed(1)} kcal/kg/day</p>
     `;
     return;
   }
 
-  // PN Composition
   const pnFluids = {
     starter: { aa: 3.3, gl: 10, Na: 3, K: 0, Ca: 1.4, Mg: 0.25, Cl: 0, Ac: 0, Ph: 1.5, TE: 0, kcal: 53.2 },
     maintenance: { aa: 3.0, gl: 10, Na: 3, K: 2, Ca: 0.15, Mg: 0.22, Cl: 2, Ac: 0, Ph: 1.5, TE: 0.74, kcal: 52 },
@@ -103,15 +89,22 @@ function calculate() {
   };
   const pn = pnFluids[pnType];
 
-  const pnVolume = (proteinTarget * 100) / pn.aa; // mL/kg/day
-  const lipidVolume = (lipidTarget / 0.178); // mL/kg/day
-  const ivVolume = (ivRate * 24) / weight;
+  const pnVolume = (proteinTarget * 100) / pn.aa;
+  const lipidVolume = (lipidTarget / 0.178);
+
+  let ivVolume = 0, GDRivd = 0;
+  if (feedChoice !== "full") {
+    if (isNaN(ivRate)) return alert("Please enter 0 in IV rate if no IV drip is used.");
+    if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
+      return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
+    }
+    ivVolume = (ivRate * 24) / weight;
+    GDRivd = (((ivVolume / 100) * dextrose * 1000) / (weight * 1440));
+  }
 
   const totalDelivered = feedPerKg + pnVolume + lipidVolume + ivVolume;
   const fluidDiff = totalFluid - totalDelivered;
   const GDRpn = ((pnVolume / 100) * pn.gl * 1000) / (weight * 1440);
-  const GDRivd = ivRate > 0 ? (((ivVolume / 100) * dextrose * 1000) / (weight * 1440)) : 0;
-
   const kcalPn = (pnVolume * pn.kcal) / 100;
   const kcalLipid = lipidVolume * 2;
   const kcalTotal = kcalPn + kcalLipid + feedKcal;
@@ -130,22 +123,21 @@ function calculate() {
     }
   }
 
-  msg += `<h3>Output per kg/day</h3>`;
-  msg += `<ul>
-    <li><strong>Protein:</strong> ${proteinTarget.toFixed(1)} g</li>
-    <li><strong>Lipid:</strong> ${(lipidVolume * 0.178).toFixed(2)} g</li>
-    <li><strong>Glucose:</strong> ${(pnVolume * pn.gl / 100).toFixed(1)} g</li>
-    <li><strong>Sodium:</strong> ${(pnVolume * pn.Na / 100 + nacl * ivVolume / 100).toFixed(1)} mmol</li>
-    <li><strong>Potassium:</strong> ${(pnVolume * pn.K / 100 + kcl * ivVolume / 500).toFixed(1)} mmol</li>
-    <li><strong>Phosphate:</strong> ${(pnVolume * pn.Ph / 100).toFixed(1)} mmol</li>
-    <li><strong>Calcium:</strong> ${(pnVolume * pn.Ca / 100).toFixed(2)} mmol</li>
-    <li><strong>Magnesium:</strong> ${(pnVolume * pn.Mg / 100).toFixed(2)} mmol</li>
-    <li><strong>Chloride:</strong> ${(pnVolume * pn.Cl / 100).toFixed(2)} mmol</li>
-    <li><strong>Acetate:</strong> ${(pnVolume * pn.Ac / 100).toFixed(2)} mmol</li>
-    <li><strong>Trace Elements:</strong> ${(pnVolume * pn.TE / 100).toFixed(2)} mL</li>
-    <li><strong>Calories:</strong> ${kcalTotal.toFixed(1)} kcal/kg/day</li>
-    <li><strong>GDR (total):</strong> ${(GDRpn + GDRivd + GDRfeed).toFixed(2)} mg/kg/min</li>
-  </ul>`;
+  msg += `<h3>Output per kg/day</h3><ul>`;
+  msg += `<li><strong>Protein:</strong> ${proteinTarget.toFixed(1)} g</li>`;
+  msg += `<li><strong>Lipid:</strong> ${(lipidVolume * 0.178).toFixed(2)} g</li>`;
+  msg += `<li><strong>Glucose:</strong> ${(pnVolume * pn.gl / 100).toFixed(1)} g</li>`;
+  msg += `<li><strong>Sodium:</strong> ${(pnVolume * pn.Na / 100 + nacl * ivVolume / 100).toFixed(1)} mmol</li>`;
+  msg += `<li><strong>Potassium:</strong> ${(pnVolume * pn.K / 100 + kcl * ivVolume / 500).toFixed(1)} mmol</li>`;
+  msg += `<li><strong>Phosphate:</strong> ${(pnVolume * pn.Ph / 100).toFixed(1)} mmol</li>`;
+  msg += `<li><strong>Calcium:</strong> ${(pnVolume * pn.Ca / 100).toFixed(2)} mmol</li>`;
+  msg += `<li><strong>Magnesium:</strong> ${(pnVolume * pn.Mg / 100).toFixed(2)} mmol</li>`;
+  msg += `<li><strong>Chloride:</strong> ${(pnVolume * pn.Cl / 100).toFixed(2)} mmol</li>`;
+  msg += `<li><strong>Acetate:</strong> ${(pnVolume * pn.Ac / 100).toFixed(2)} mmol</li>`;
+  msg += `<li><strong>Trace Elements:</strong> ${(pnVolume * pn.TE / 100).toFixed(2)} mL</li>`;
+  msg += `<li><strong>Calories:</strong> ${kcalTotal.toFixed(1)} kcal/kg/day</li>`;
+  msg += `<li><strong>GDR (total):</strong> ${(GDRpn + GDRivd + GDRfeed).toFixed(2)} mg/kg/min</li>`;
+  msg += `</ul>`;
 
   document.getElementById('results').innerHTML = msg;
 }
