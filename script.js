@@ -39,10 +39,10 @@ function calculate() {
   const feedType = document.getElementById('feedTypeSelect').value;
 
   const feedData = {
-    preterm_breastmilk: { kcal: 74, carb: 6.4, Na: 17, K: 29, Ca: 74, Phos: 67 },
-    preterm_formula: { kcal: 80, carb: 8.6, Na: 14, K: 41, Ca: 77, Phos: 67 },
-    mature_breastmilk: { kcal: 70, carb: 7.4, Na: 6.4, K: 35, Ca: 15, Phos: 8 },
-    standard_formula: { kcal: 67, carb: 7.5, Na: 14, K: 46, Ca: 33, Phos: 80 }
+    preterm_breastmilk: { kcal: 74, carb: 6.4 },
+    preterm_formula: { kcal: 80, carb: 8.6 },
+    mature_breastmilk: { kcal: 70, carb: 7.4 },
+    standard_formula: { kcal: 67, carb: 7.5 }
   };
   const feedComp = feedData[feedType];
   const feedPerDay = feedChoice === 'full' ? (totalFluid * weight) : (24 / feedInterval) * feedVolume;
@@ -66,29 +66,27 @@ function calculate() {
     return;
   }
 
-  // === Begin PN / IVD logic ===
-
-  // Age-based caps
+  // Cap limits
   let maxProtein = 4, maxLipid = 18;
   if (day === 1) { maxProtein = 1; maxLipid = 6; }
   else if (day === 2) { maxProtein = 2; maxLipid = 12; }
-  else if (day === 3) { maxProtein = 3; maxLipid = 18; }
-
-  const pnTypeSelect = document.getElementById('pnType');
-  const starterOpt = pnTypeSelect.querySelector('option[value="starter"]');
-  if (day > 1 && starterOpt) starterOpt.remove();
+  else if (day === 3) { maxProtein = 3; }
 
   const pnType = document.getElementById('pnType').value;
   const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
-  const lipidTarget = Math.min(parseFloat(document.getElementById('lipidTarget').value) || 0, maxLipid * 0.178);
+  const lipidTargetG = parseFloat(document.getElementById('lipidTarget').value) || 0;
+  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178);
 
   const ivRate = parseFloat(document.getElementById('ivRate').value);
-  const nacl = parseFloat(document.getElementById('nacl').value);
-  const kcl = parseFloat(document.getElementById('kcl').value);
-  const dextrose = parseFloat(document.getElementById('dextrose').value);
+  let nacl = parseFloat(document.getElementById('nacl').value);
+  let kcl = parseFloat(document.getElementById('kcl').value);
+  let dextrose = parseFloat(document.getElementById('dextrose').value);
 
   if (isNaN(ivRate)) return alert("Please enter 0 in IV rate if no IV drip is used.");
-  if (ivRate > 0 && (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose))) {
+  if (ivRate === 0) {
+    kcl = 0;
+    dextrose = 0;
+  } else if (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose)) {
     return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
   }
 
@@ -113,16 +111,18 @@ function calculate() {
   const kcalTotal = kcalPn + kcalLipid + feedKcal;
 
   let msg = `<h2>Combined Feeds + PN + IVD</h2>`;
-  msg += `<p><strong>PN Volume:</strong> ${pnVolume.toFixed(1)} mL/kg/day</p>`;
-  msg += `<p><strong>Lipid Volume:</strong> ${lipidVolume.toFixed(1)} mL/kg/day</p>`;
+  msg += `<p><strong>PN Volume:</strong> ${pnVolume.toFixed(1)} mL/kg/day (${(pnVolume * weight / 24).toFixed(2)} mL/hr)</p>`;
+  msg += `<p><strong>Lipid Volume:</strong> ${lipidVolume.toFixed(1)} mL/kg/day (${(lipidVolume * weight / 24).toFixed(2)} mL/hr)</p>`;
   msg += `<p><strong>IVD Volume:</strong> ${ivVolume.toFixed(1)} mL/kg/day</p>`;
   msg += `<p><strong>Total Fluid Delivered:</strong> ${totalDelivered.toFixed(1)} mL/kg/day</p>`;
 
   if (Math.abs(fluidDiff) > 1) {
-    msg += `<p class="warning">⚠️ Fluid delivery ${fluidDiff > 0 ? "under" : "over"} target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     if (fluidDiff > 0) {
       const rateNeeded = (fluidDiff * weight) / 24;
+      msg += `<p class="warning">⚠️ Fluid delivery under target by ${fluidDiff.toFixed(1)} mL/kg/day.</p>`;
       msg += `<p><strong>Suggested IVD rate to meet target:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
+    } else {
+      msg += `<p class="warning">⚠️ Fluid delivery over target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     }
   }
 
