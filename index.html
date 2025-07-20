@@ -3,109 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NICU Fluid Calculator</title>
+  <title>NICU Fluid & Feeding Calculator</title>
   <style>
-    body { font-family: sans-serif; max-width: 700px; margin: auto; padding: 20px; }
-    .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
-    label { display: block; margin-top: 10px; }
-    input, select { width: 100%; padding: 6px; margin-top: 4px; }
+    body { font-family: Arial; padding: 20px; max-width: 800px; margin: auto; background: #f7f9fa; }
+    label, select, input { display: block; margin: 10px 0; width: 100%; padding: 6px; }
+    h2 { margin-top: 30px; }
+    #results { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #fff; }
     .warning { color: red; font-weight: bold; }
+    .section { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background: #eef5f9; }
   </style>
 </head>
 <body>
 
-<h1>NICU Nutrition & Fluid Calculator</h1>
+  <h1>NICU Fluid & Nutrition Calculator</h1>
 
-<div class="section">
-  <h2>1. Baby Information</h2>
-  <label>Date and Time of Birth:
-    <input type="datetime-local" id="dob" required />
-  </label>
-  <label>Current Date and Time:
-    <input type="datetime-local" id="now" required />
-  </label>
-  <label>Birth Weight (kg):
-    <input type="number" id="weight" step="0.01" required />
-  </label>
-  <label>Total Fluid Intended (ml/kg/day):
-    <input type="number" id="fluid" step="0.1" required />
-  </label>
-</div>
+  <div class="section">
+    <label>Date & Time of Birth:
+      <input type="datetime-local" id="dob">
+    </label>
 
-<div class="section">
-  <h2>2. Feeding Plan</h2>
-  <label><input type="radio" name="feedTypeChoice" value="full" onchange="toggleSections()"> Full Feeds</label>
-  <label><input type="radio" name="feedTypeChoice" value="partial" checked onchange="toggleSections()"> Not Full Feeds</label>
+    <label>Current Date & Time:
+      <input type="datetime-local" id="now">
+    </label>
 
-  <label>Feed Type:
-    <select id="feedTypeSelect">
-      <option value="preterm_breastmilk">Preterm Breastmilk</option>
-      <option value="preterm_formula">Preterm Formula</option>
-      <option value="mature_breastmilk">Mature Breastmilk</option>
-      <option value="standard_formula">Standard Formula</option>
-    </select>
-  </label>
+    <label>Birth Weight (kg):
+      <input type="number" id="weight" step="0.01">
+    </label>
 
-  <label>Feed Volume (ml/feed):
-    <input type="number" id="feedVolume" step="0.1" />
-  </label>
-  <label>Feed Interval (hours):
-    <select id="feedInterval">
-      <option value="1">1-hourly</option>
-      <option value="2">2-hourly</option>
-      <option value="3" selected>3-hourly</option>
-      <option value="4">4-hourly</option>
-    </select>
-  </label>
-  <p id="feedPreview" style="font-style: italic; color: #555;"></p>
-</div>
+    <label>Total Fluid Intended (ml/kg/day):
+      <input type="number" id="fluid" step="0.1">
+    </label>
+  </div>
 
-<div class="section" id="pnSection">
-  <h2>3. Parenteral Nutrition</h2>
-  <label>PN Type:
-    <select id="pnType">
-      <option value="starter">Starter</option>
-      <option value="maintenance">Maintenance (No Acetate)</option>
-      <option value="concentrated">Maintenance (With Acetate)</option>
-    </select>
-  </label>
-  <label>Protein Target (g/kg/day):
-    <input type="number" id="protein" step="0.1" />
-  </label>
-</div>
+  <div class="section">
+    <label>Feeding Type:</label>
+    <label><input type="radio" name="feedTypeChoice" value="full" checked onclick="toggleSections()"> Full Feeds</label>
+    <label><input type="radio" name="feedTypeChoice" value="not_full" onclick="toggleSections()"> Not Full Feeds</label>
 
-<div class="section" id="lipidSection">
-  <h2>4. Lipid</h2>
-  <label>Lipid Target (g/kg/day):
-    <input type="number" id="lipidTarget" step="0.1" />
-  </label>
-</div>
+    <label>Feed Type:
+      <select id="feedTypeSelect">
+        <option value="preterm_breastmilk">Preterm Breast Milk</option>
+        <option value="preterm_formula">Preterm Formula</option>
+        <option value="mature_breastmilk">Mature Breast Milk</option>
+        <option value="standard_formula">Standard Formula</option>
+      </select>
+    </label>
 
-<div class="section" id="ivSection">
-  <h2>5. IV Drip</h2>
-  <label>IV Rate (ml/hr):
-    <input type="number" id="ivRate" step="0.1" />
-  </label>
-  <label>Sodium Chloride Strength:
-    <select id="nacl">
-      <option value="0.2">1/5 NS (0.2%)</option>
-      <option value="0.45">½ NS (0.45%)</option>
-      <option value="0.9">NS (0.9%)</option>
-      <option value="3">3% Saline</option>
-    </select>
-  </label>
-  <label>KCl added (mmol/pint):
-    <input type="number" id="kcl" step="0.1" />
-  </label>
-  <label>Dextrose Concentration (%):
-    <input type="number" id="dextrose" step="0.1" />
-  </label>
-</div>
+    <div id="feedInputs">
+      <label>Feed Volume per Feed (mL):
+        <input type="number" id="feedVolume" step="1">
+      </label>
+      <label>Feed Interval (hours):
+        <select id="feedInterval">
+          <option value="1">1 hourly</option>
+          <option value="2">2 hourly</option>
+          <option value="3" selected>3 hourly</option>
+          <option value="4">4 hourly</option>
+        </select>
+      </label>
+    </div>
 
-<button onclick="calculate()">Calculate</button>
+    <p id="feedPreview" style="font-style: italic; color: #555;"></p>
+  </div>
 
-<div class="section" id="results"></div>
+  <div class="section" id="pnSection">
+    <h2>Parenteral Nutrition</h2>
+    <label>PN Type:
+      <select id="pnType">
+        <option value="starter">Starter</option>
+        <option value="maintenance">Maintenance (No Acetate)</option>
+        <option value="concentrated">Maintenance (With Acetate)</option>
+      </select>
+    </label>
 
-<script src="script.js"></script>
+    <label>Protein Target (g/kg/day):
+      <input type="number" id="protein" step="0.1">
+    </label>
+  </div>
+
+  <div class="section" id="lipidSection">
+    <h2>Lipid</h2>
+    <label>Lipid Target (g/kg/day):
+      <input type="number" id="lipidTarget" step="0.01">
+    </label>
+  </div>
+
+  <div class="section" id="ivSection">
+    <h2>IV Drip (Optional)</h2>
+
+    <label>IV Rate (mL/hr):
+      <input type="number" id="ivRate" step="0.1">
+    </label>
+
+    <label>Sodium Chloride Strength:
+      <select id="nacl">
+        <option value="0.2">1/5 NS (0.2%)</option>
+        <option value="0.45">½ NS (0.45%)</option>
+        <option value="0.9">NS (0.9%)</option>
+        <option value="3">3% Saline</option>
+      </select>
+    </label>
+
+    <label>KCl Added (mmol per pint):
+      <input type="number" id="kcl" step="0.1">
+    </label>
+
+    <label>Dextrose (%):
+      <input type="number" id="dextrose" step="1">
+    </label>
+  </div>
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div id="results"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
