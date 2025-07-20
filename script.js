@@ -1,139 +1,135 @@
 function calculate() {
-  const dob = new Date(document.getElementById('dob').value);
-  const now = new Date(document.getElementById('now').value);
-  const weight = parseFloat(document.getElementById('weight').value).toFixed(2);
-  const fluid = parseFloat(document.getElementById('fluid').value);
-  const proteinTarget = parseFloat(document.getElementById('protein').value);
-  const pnType = document.getElementById('pnType').value;
-  const ivRateInput = document.getElementById('ivRate').value;
+  const dob = new Date(document.getElementById("dob").value);
+  const now = new Date(document.getElementById("now").value);
+  const ageHours = Math.floor((now - dob) / 36e5);
+  const weight = parseFloat(document.getElementById("weight").value);
+  const totalFluid = parseFloat(document.getElementById("fluid").value);
 
-  const nacl = document.getElementById('nacl').value;
-  const kcl = document.getElementById('kcl').value;
-  const dextrose = document.getElementById('dextrose').value;
+  const feedTypeChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
+  const feedType = document.getElementById("feedTypeSelect").value;
+  const feedData = {
+    preterm_breastmilk:  { kcal: 74, carb: 6.4, Na: 17, K: 29, Ca: 74, Phos: 67 },
+    preterm_formula:     { kcal: 80, carb: 8.6, Na: 14, K: 41, Ca: 77, Phos: 67 },
+    mature_breastmilk:   { kcal: 70, carb: 7.4, Na: 6.4, K: 35, Ca: 15, Phos: 8 },
+    standard_formula:    { kcal: 67, carb: 7.5, Na: 14, K: 46, Ca: 33, Phos: 80 }
+  };
 
-  const warnings = [];
-  let recommendation = "";
+  const feedComp = feedData[feedType];
+  let feedVolumePerDay = 0;
 
-  if (ivRateInput === "") {
-    document.getElementById('results').innerHTML = `<p class="warning">⚠️ IV drip rate is blank. If no IV drip is used, please enter <strong>0</strong>.</p>`;
-    return;
+  if (feedTypeChoice === "full") {
+    feedVolumePerDay = (totalFluid * weight).toFixed(1);
+  } else {
+    const feedVolume = parseFloat(document.getElementById("feedVolume").value);
+    const feedInterval = parseInt(document.getElementById("feedInterval").value);
+    feedVolumePerDay = (24 / feedInterval) * feedVolume;
   }
 
-  const ivRate = parseFloat(ivRateInput);
+  const feedPerKg = feedVolumePerDay / weight;
 
-  if (ivRate > 0 && (nacl === "" || kcl === "" || dextrose === "")) {
-    document.getElementById('results').innerHTML = `<p class="warning">⚠️ All IV parameters (NaCl, KCl, Dextrose) are required when IV rate is above 0.</p>`;
-    return;
-  }
+  // Feed-derived outputs
+  const kcalFromFeed = (feedPerKg / 100) * feedComp.kcal;
+  const GDRfeed = ((feedVolumePerDay / 100) * feedComp.carb * 1000) / (weight * 1440); // mg/kg/min
+  const NaFromFeed = (feedComp.Na * feedPerKg) / 1000;
+  const KFromFeed = (feedComp.K * feedPerKg) / 1000;
+  const CaFromFeed = (feedComp.Ca * feedPerKg) / 100;
+  const PhosFromFeed = (feedComp.Phos * feedPerKg) / 100;
 
-  const ageHours = ((now - dob) / (1000 * 60 * 60)).toFixed(1);
-  const dol = Math.floor(ageHours / 24) + 1;
-  const totalFluidPerDay = fluid * weight;
+  // Remaining fluid after feeds
+  const remainingFluid = totalFluid - feedPerKg;
+
+  // IV drip input
+  const ivRate = parseFloat(document.getElementById("ivRate").value) || 0;
+  const nacl = parseFloat(document.getElementById("nacl").value) || 0;
+  const kcl = parseFloat(document.getElementById("kcl").value) || 0;
+  const dextrose = parseFloat(document.getElementById("dextrose").value) || 0;
+
   const ivVolumePerDay = ivRate * 24;
-  const remainingFluid = totalFluidPerDay - ivVolumePerDay;
+  const ivPerKg = ivVolumePerDay / weight;
+  const NaFromIV = (nacl * 1000 * ivVolumePerDay) / (1000 * 1000); // mmol/kg/day
+  const KFromIV = (kcl / 1000) * (ivVolumePerDay / weight); // mmol/kg/day
+  const kcalFromIV = ((dextrose / 100) * ivVolumePerDay * 3.4) / weight;
+  const GDRiv = ((ivRate * dextrose) / (weight * 6)); // mg/kg/min
 
+  // PN inputs
+  const proteinTarget = Math.min(parseFloat(document.getElementById("protein").value), 4);
+  const pnType = document.getElementById("pnType").value;
   const pnData = {
-    starter: {
-      aa: 3.3, glucose: 10, na: 3, phos: 1.5, k: 0, ca: 1.4, mg: 0.25, cl: 0, ac: 0, te: 0, kcal: 53.2
-    },
-    maintenance: {
-      aa: 3.0, glucose: 10, na: 3, phos: 1.5, k: 2, ca: 0.15, mg: 0.22, cl: 2, ac: 0, te: 0.74, kcal: 52
-    },
-    concentrated: {
-      aa: 3.8, glucose: 12.5, na: 4, phos: 1.5, k: 2.7, ca: 0.15, mg: 0.25, cl: 2.7, ac: 1, te: 0.74, kcal: 65.2
-    }
-  }[pnType];
+    starter:       { aa: 3.3, glucose: 10, Na: 3, K: 0, Ca: 1.4, Mg: 0.25, Cl: 0, Acetate: 0, Phos: 1.5, TE: 0, kcal: 53.2 },
+    maintenance:   { aa: 3, glucose: 10, Na: 3, K: 2, Ca: 0.15, Mg: 0.22, Cl: 2, Acetate: 0, Phos: 1.5, TE: 0.74, kcal: 52 },
+    concentrated:  { aa: 3.8, glucose: 12.5, Na: 4, K: 2.7, Ca: 0.15, Mg: 0.25, Cl: 2.7, Acetate: 1, Phos: 1.5, TE: 0.74, kcal: 65.2 }
+  };
 
-  if (proteinTarget > 4) warnings.push("⚠️ Protein target capped at 4 g/kg/day");
+  const pnComp = pnData[pnType];
+  const pnRate = Math.min(((proteinTarget * weight * 100) / (pnComp.aa * 24)), (remainingFluid - ivPerKg));
+  const actualPNmlPerDay = pnRate * 24;
+  const actualPNmlPerKgDay = actualPNmlPerDay / weight;
+  const cappedByProtein = actualPNmlPerKgDay < (remainingFluid - ivPerKg);
 
-  const finalProteinTarget = Math.min(proteinTarget, 4);
-  const aaConc = pnData.aa;
-  let pnVolumePerDay = (finalProteinTarget * weight * 100) / aaConc;
+  // PN nutrient delivery
+  const aa = (actualPNmlPerKgDay / 100) * pnComp.aa;
+  const glucose = (actualPNmlPerKgDay / 100) * pnComp.glucose;
+  const kcalFromPN = (actualPNmlPerKgDay / 100) * pnComp.kcal;
+  const GDRpn = ((pnRate * pnComp.glucose) / (weight * 6));
 
-  // 🔁 Auto-assign lipid based on DOL
-  let lipidVolumeKg = dol === 1 ? 6 : (dol === 2 ? 12 : 18);
-  let lipidGramsKg = dol === 1 ? 1.07 : (dol === 2 ? 2.13 : 3.2);
-  let lipidKcalKg = lipidVolumeKg * 1.8;
+  const NaFromPN = (actualPNmlPerKgDay / 100) * pnComp.Na;
+  const KFromPN = (actualPNmlPerKgDay / 100) * pnComp.K;
+  const CaFromPN = (actualPNmlPerKgDay / 100) * pnComp.Ca;
+  const MgFromPN = (actualPNmlPerKgDay / 100) * pnComp.Mg;
+  const ClFromPN = (actualPNmlPerKgDay / 100) * pnComp.Cl;
+  const Acetate = (actualPNmlPerKgDay / 100) * pnComp.Acetate;
+  const PhosFromPN = (actualPNmlPerKgDay / 100) * pnComp.Phos;
+  const TE = (actualPNmlPerKgDay / 100) * pnComp.TE;
 
-  let lipidVolumePerDay = lipidVolumeKg * weight;
-  let remainingFluidAfterLipid = remainingFluid - lipidVolumePerDay;
+  // Lipid calculation
+  let lipidRate = 0;
+  let lipidGrams = 0;
+  let lipidKcal = 0;
 
-  if (pnVolumePerDay > remainingFluidAfterLipid) {
-    pnVolumePerDay = remainingFluidAfterLipid;
+  if (ageHours < 24) {
+    lipidRate = 6;
+    lipidGrams = 1.07;
+    lipidKcal = 10.8;
+  } else if (ageHours < 48) {
+    lipidRate = 12;
+    lipidGrams = 2.13;
+    lipidKcal = 21.6;
+  } else {
+    lipidRate = 18;
+    lipidGrams = 3.2;
+    lipidKcal = 32.4;
   }
 
-  const pnRate = pnVolumePerDay / 24;
-  const lipidRate = lipidVolumePerDay / 24;
+  // Total delivered fluid
+  const totalDelivered = feedPerKg + ivPerKg + actualPNmlPerKgDay;
+  const fluidDeficit = totalDelivered < totalFluid;
+  const suggestedDrip = ((totalFluid - totalDelivered) * weight) / 24;
 
-  const aaDelivered = (pnVolumePerDay * aaConc) / 100;
-  const proteinPerKgDay = (aaDelivered / weight).toFixed(1);
+  // Display results
+  let output = `<h2>Results</h2>
+  <p><strong>Feed Volume per Day:</strong> ${feedPerKg.toFixed(1)} mL/kg/day</p>
+  <p><strong>IV Volume per Day:</strong> ${ivPerKg.toFixed(1)} mL/kg/day</p>
+  <p><strong>PN Volume:</strong> ${actualPNmlPerKgDay.toFixed(1)} mL/kg/day</p>
+  <p><strong>Lipid Volume:</strong> ${lipidRate.toFixed(1)} mL/kg/day</p>
+  <p><strong>Calories:</strong> ${(kcalFromFeed + kcalFromIV + kcalFromPN + lipidKcal).toFixed(1)} kcal/kg/day</p>
+  <p><strong>Glucose Delivery Rate (GDR):</strong> ${(GDRfeed + GDRiv + GDRpn).toFixed(2)} mg/kg/min</p>
+  <p><strong>Protein Delivered:</strong> ${aa.toFixed(2)} g/kg/day</p>
+  <p><strong>Lipid Delivered:</strong> ${lipidGrams.toFixed(2)} g/kg/day</p>
 
-  const pnGlucose = (pnVolumePerDay * pnData.glucose) / 100;
-  const ivGlucose = ivRate > 0 ? ((parseFloat(dextrose) / 100) * ivRate * 24) : 0;
-  const totalGlucose = pnGlucose + ivGlucose;
+  <h3>Electrolyte & Micronutrient Delivery</h3>
+  <p><strong>Sodium:</strong> ${(NaFromFeed + NaFromIV + NaFromPN).toFixed(2)} mmol/kg/day</p>
+  <p><strong>Potassium:</strong> ${(KFromFeed + KFromIV + KFromPN).toFixed(2)} mmol/kg/day</p>
+  <p><strong>Calcium:</strong> ${(CaFromFeed + CaFromPN).toFixed(2)} mmol/kg/day</p>
+  <p><strong>Phosphate:</strong> ${(PhosFromFeed + PhosFromPN).toFixed(2)} mmol/kg/day</p>
+  <p><strong>Magnesium:</strong> ${MgFromPN.toFixed(2)} mmol/kg/day</p>
+  <p><strong>Acetate:</strong> ${Acetate.toFixed(2)} mmol/kg/day</p>
+  <p><strong>Chloride:</strong> ${ClFromPN.toFixed(2)} mmol/kg/day</p>
+  <p><strong>Trace Elements:</strong> ${TE.toFixed(2)} mL/kg/day</p>`;
 
-  // ✅ GDR using center's formula
-  const pnGDR = (pnRate * pnData.glucose) / (weight * 6);
-  const ivGDR = ivRate > 0 ? (ivRate * parseFloat(dextrose)) / (weight * 6) : 0;
-  const totalGDR = (pnGDR + ivGDR).toFixed(1);
-
-  // ✅ Calories
-  const pnKcalKg = (pnData.kcal * pnVolumePerDay / 100 / weight).toFixed(1);
-  const lipidKcalKgRounded = lipidKcalKg.toFixed(1);
-  const ivKcalKg = ivGlucose > 0 ? ((ivGlucose / weight) * 3.4).toFixed(1) : "0.0";
-  const totalKcal = (parseFloat(pnKcalKg) + parseFloat(lipidKcalKgRounded) + parseFloat(ivKcalKg)).toFixed(1);
-
-  const totalDeliveredFluid = ((ivVolumePerDay + pnVolumePerDay + lipidVolumePerDay) / weight).toFixed(1);
-  const fluidShortfall = (fluid - totalDeliveredFluid).toFixed(1);
-
-  if (fluidShortfall > 0) {
-    warnings.push(`⚠️ Total fluid delivered = ${totalDeliveredFluid} mL/kg/day is less than intended ${fluid} mL/kg/day due to protein cap`);
-    const supplementRate = ((fluidShortfall * weight) / 24).toFixed(1);
-    recommendation = `💡 Suggested IV drip rate to meet fluid goal: <strong>${supplementRate} mL/hr</strong>`;
+  if (fluidDeficit) {
+    output += `<p class="warning">⚠️ Fluid shortfall: Only delivering ${totalDelivered.toFixed(1)} mL/kg/day out of ${totalFluid}.</p>`;
+    output += `<p class="warning">💧 Suggest supplementing IV drip at ~${suggestedDrip.toFixed(1)} mL/hr to meet target.</p>`;
   }
 
-  function perKg(val) {
-    return (val * pnVolumePerDay / 100 / weight).toFixed(1);
-  }
-
-  function total(val, iv) {
-    return (parseFloat(val) + parseFloat(iv)).toFixed(1);
-  }
-
-  const ivNa = ivRate > 0 ? (parseFloat(nacl) * 154 * ivRate * 24 / 1000 / weight).toFixed(1) : "0.0";
-  const ivK = ivRate > 0 ? (parseFloat(kcl) / 0.5 * ivRate * 24 / 1000 / weight).toFixed(1) : "0.0";
-
-  document.getElementById('results').innerHTML = `
-    <h2>Results</h2>
-    <p><strong>Age:</strong> ${ageHours} hours (Day ${dol})</p>
-    <p><strong>Weight:</strong> ${weight} kg</p>
-    <p><strong>PN Rate:</strong> ${pnRate.toFixed(1)} mL/hr</p>
-    <p><strong>Lipid Rate:</strong> ${lipidRate.toFixed(1)} mL/hr (Auto-assigned ${lipidVolumeKg} mL/kg/day)</p>
-    <p><strong>GDR:</strong> ${totalGDR} mg/kg/min</p>
-
-    <h3>Total Calories (kcal/kg/day)</h3>
-    <ul>
-      <li>PN: ${pnKcalKg}</li>
-      <li>Lipid: ${lipidKcalKgRounded}</li>
-      <li>IV Dextrose: ${ivKcalKg}</li>
-      <li><strong>Total: ${totalKcal}</strong></li>
-    </ul>
-
-    <table>
-      <tr><th>Component</th><th>From PN</th><th>From IV</th><th>Total (per kg/day)</th></tr>
-      <tr><td>Amino Acid (g)</td><td>${proteinPerKgDay}</td><td>–</td><td>${proteinPerKgDay}</td></tr>
-      <tr><td>Glucose (g)</td><td>${pnGlucose.toFixed(1)}</td><td>${ivGlucose.toFixed(1)}</td><td>${(totalGlucose / weight).toFixed(1)}</td></tr>
-      <tr><td>Sodium (mmol)</td><td>${perKg(pnData.na)}</td><td>${ivNa}</td><td>${total(perKg(pnData.na), ivNa)}</td></tr>
-      <tr><td>Potassium (mmol)</td><td>${perKg(pnData.k)}</td><td>${ivK}</td><td>${total(perKg(pnData.k), ivK)}</td></tr>
-      <tr><td>Phosphate (mmol)</td><td>${perKg(pnData.phos)}</td><td>–</td><td>${perKg(pnData.phos)}</td></tr>
-      <tr><td>Calcium (mmol)</td><td>${perKg(pnData.ca)}</td><td>–</td><td>${perKg(pnData.ca)}</td></tr>
-      <tr><td>Magnesium (mmol)</td><td>${perKg(pnData.mg)}</td><td>–</td><td>${perKg(pnData.mg)}</td></tr>
-      <tr><td>Chloride (mmol)</td><td>${perKg(pnData.cl)}</td><td>–</td><td>${perKg(pnData.cl)}</td></tr>
-      <tr><td>Acetate (mmol)</td><td>${perKg(pnData.ac)}</td><td>–</td><td>${perKg(pnData.ac)}</td></tr>
-      <tr><td>Trace Elements (mL)</td><td>${perKg(pnData.te)}</td><td>–</td><td>${perKg(pnData.te)}</td></tr>
-    </table>
-
-    ${warnings.length ? `<p class="warning">${warnings.join('<br>')}</p>` : ''}
-    ${recommendation ? `<p class="warning">${recommendation}</p>` : ''}
-  `;
+  document.getElementById("results").innerHTML = output;
 }
