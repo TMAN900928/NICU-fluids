@@ -1,3 +1,4 @@
+alert("calculate() triggered");
 function calculate() {
   const dob = new Date(document.getElementById("dob").value);
   const now = new Date(document.getElementById("now").value);
