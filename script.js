@@ -1,7 +1,10 @@
 function toggleSections() {
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
-  document.getElementById('pnSection').style.display = feedChoice === 'full' ? 'none' : 'block';
-  document.getElementById('ivSection').style.display = feedChoice === 'full' ? 'none' : 'block';
+  const show = feedChoice !== 'full';
+
+  document.getElementById('pnSection').style.display = show ? 'block' : 'none';
+  document.getElementById('lipidSection').style.display = show ? 'block' : 'none';
+  document.getElementById('ivSection').style.display = show ? 'block' : 'none';
 }
 
 function updateFeedPreview() {
@@ -19,7 +22,7 @@ function updateFeedPreview() {
 
 document.getElementById('feedVolume').addEventListener('input', updateFeedPreview);
 document.getElementById('feedInterval').addEventListener('change', updateFeedPreview);
-toggleSections();
+document.addEventListener("DOMContentLoaded", toggleSections);
 
 function calculate() {
   const dob = new Date(document.getElementById('dob').value);
@@ -116,7 +119,7 @@ function calculate() {
   msg += `<p><strong>Total Fluid Delivered:</strong> ${totalDelivered.toFixed(1)} mL/kg/day</p>`;
 
   if (Math.abs(fluidDiff) > 1) {
-    msg += `<p class="warning">⚠️ Fluid delivery ${fluidDiff < 0 ? "under" : "over"} target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
+    msg += `<p class="warning">⚠️ Fluid delivery ${fluidDiff > 0 ? "under" : "over"} target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     if (fluidDiff > 0) {
       const rateNeeded = (fluidDiff * weight) / 24;
       msg += `<p><strong>Suggested IVD rate to meet target:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
