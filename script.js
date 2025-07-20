@@ -1,10 +1,11 @@
 function toggleSections() {
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
-  const show = feedChoice !== 'full';
+  const showPartial = feedChoice !== 'full';
 
-  document.getElementById('pnSection').style.display = show ? 'block' : 'none';
-  document.getElementById('lipidSection').style.display = show ? 'block' : 'none';
-  document.getElementById('ivSection').style.display = show ? 'block' : 'none';
+  document.getElementById('pnSection').style.display = showPartial ? 'block' : 'none';
+  document.getElementById('lipidSection').style.display = showPartial ? 'block' : 'none';
+  document.getElementById('ivSection').style.display = showPartial ? 'block' : 'none';
+  document.getElementById('feedInputs').style.display = showPartial ? 'block' : 'none';
 }
 
 function updateFeedPreview() {
@@ -34,10 +35,7 @@ function calculate() {
   const totalFluid = parseFloat(document.getElementById('fluid').value);
   const feedChoice = document.querySelector('input[name="feedTypeChoice"]:checked').value;
 
-  const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
-  const feedInterval = parseFloat(document.getElementById('feedInterval').value);
   const feedType = document.getElementById('feedTypeSelect').value;
-
   const feedData = {
     preterm_breastmilk: { kcal: 74, carb: 6.4 },
     preterm_formula: { kcal: 80, carb: 8.6 },
@@ -45,14 +43,17 @@ function calculate() {
     standard_formula: { kcal: 67, carb: 7.5 }
   };
   const feedComp = feedData[feedType];
-  const feedPerDay = feedChoice === 'full' ? (totalFluid * weight) : (24 / feedInterval) * feedVolume;
-  const feedPerKg = feedPerDay / weight;
 
-  if (feedPerKg > totalFluid) {
-    alert(`⚠️ Feed volume exceeds total fluid intended (${feedPerKg.toFixed(1)} > ${totalFluid} mL/kg/day).`);
-    return;
+  let feedPerDay = 0;
+  if (feedChoice === 'full') {
+    feedPerDay = (totalFluid * weight); // Full feeds = all fluid is enteral
+  } else {
+    const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
+    const feedInterval = parseFloat(document.getElementById('feedInterval').value) || 3;
+    feedPerDay = (24 / feedInterval) * feedVolume;
   }
 
+  const feedPerKg = feedPerDay / weight;
   const feedKcal = (feedPerDay * feedComp.kcal) / weight / 100;
   const GDRfeed = ((feedPerDay / 100) * feedComp.carb * 1000) / (weight * 1440);
 
@@ -66,28 +67,32 @@ function calculate() {
     return;
   }
 
-  // Day-based caps
   let maxProtein = 4, maxLipid = 18;
   if (day === 1) { maxProtein = 1; maxLipid = 6; }
   else if (day === 2) { maxProtein = 2; maxLipid = 12; }
   else if (day === 3) { maxProtein = 3; }
 
   const pnType = document.getElementById('pnType').value;
+  if (pnType === 'starter' && day > 1) {
+    alert("Starter PN should not be used after 24 hours of life.");
+    return;
+  }
+
   const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
   const lipidTargetG = parseFloat(document.getElementById('lipidTarget').value) || 0;
-  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178); // 1g = 5.6mL, so 1mL = 0.178g
+  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178); // 1g = 5.6 mL
 
   const ivRate = parseFloat(document.getElementById('ivRate').value);
   let nacl = parseFloat(document.getElementById('nacl').value);
   let kcl = parseFloat(document.getElementById('kcl').value);
   let dextrose = parseFloat(document.getElementById('dextrose').value);
 
-  if (isNaN(ivRate)) return alert("Please enter 0 in IV rate if no IV drip is used.");
+  if (isNaN(ivRate)) return alert("If no IV drip is used, enter 0 in IV rate.");
   if (ivRate === 0) {
     kcl = 0;
     dextrose = 0;
   } else if (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose)) {
-    return alert("IV rate > 0 requires NaCl strength, KCl, and Dextrose % filled.");
+    return alert("When IV rate > 0, NaCl, KCl, and Dextrose must be filled.");
   }
 
   const pnFluids = {
