@@ -66,7 +66,7 @@ function calculate() {
     return;
   }
 
-  // Cap limits
+  // Day-based caps
   let maxProtein = 4, maxLipid = 18;
   if (day === 1) { maxProtein = 1; maxLipid = 6; }
   else if (day === 2) { maxProtein = 2; maxLipid = 12; }
@@ -75,7 +75,7 @@ function calculate() {
   const pnType = document.getElementById('pnType').value;
   const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
   const lipidTargetG = parseFloat(document.getElementById('lipidTarget').value) || 0;
-  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178);
+  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178); // 1g = 5.6mL, so 1mL = 0.178g
 
   const ivRate = parseFloat(document.getElementById('ivRate').value);
   let nacl = parseFloat(document.getElementById('nacl').value);
@@ -87,7 +87,7 @@ function calculate() {
     kcl = 0;
     dextrose = 0;
   } else if (isNaN(nacl) || isNaN(kcl) || isNaN(dextrose)) {
-    return alert("IV rate > 0 requires NaCl strength, KCl, and dextrose % filled.");
+    return alert("IV rate > 0 requires NaCl strength, KCl, and Dextrose % filled.");
   }
 
   const pnFluids = {
@@ -98,7 +98,10 @@ function calculate() {
   const pn = pnFluids[pnType];
 
   const pnVolume = (proteinTarget * 100) / pn.aa;
+  const pnRate = (pnVolume * weight) / 24;
   const lipidVolume = (lipidTarget / 0.178);
+  const lipidRate = (lipidVolume * weight) / 24;
+
   const ivVolume = (ivRate * 24) / weight;
   const GDRivd = ((ivVolume / 100) * dextrose * 1000) / (weight * 1440);
   const GDRpn = ((pnVolume / 100) * pn.gl * 1000) / (weight * 1440);
@@ -110,19 +113,19 @@ function calculate() {
   const kcalLipid = lipidVolume * 2;
   const kcalTotal = kcalPn + kcalLipid + feedKcal;
 
-  let msg = `<h2>Combined Feeds + PN + IVD</h2>`;
-  msg += `<p><strong>PN Volume:</strong> ${pnVolume.toFixed(1)} mL/kg/day (${(pnVolume * weight / 24).toFixed(2)} mL/hr)</p>`;
-  msg += `<p><strong>Lipid Volume:</strong> ${lipidVolume.toFixed(1)} mL/kg/day (${(lipidVolume * weight / 24).toFixed(2)} mL/hr)</p>`;
-  msg += `<p><strong>IVD Volume:</strong> ${ivVolume.toFixed(1)} mL/kg/day</p>`;
+  let msg = `<h2>Combined Nutrition Summary</h2>`;
+  msg += `<p><strong>PN Rate:</strong> ${pnRate.toFixed(1)} mL/hr</p>`;
+  msg += `<p><strong>Lipid Rate:</strong> ${lipidRate.toFixed(1)} mL/hr</p>`;
+  msg += `<p><strong>IVD Rate:</strong> ${ivRate.toFixed(1)} mL/hr</p>`;
   msg += `<p><strong>Total Fluid Delivered:</strong> ${totalDelivered.toFixed(1)} mL/kg/day</p>`;
 
   if (Math.abs(fluidDiff) > 1) {
     if (fluidDiff > 0) {
       const rateNeeded = (fluidDiff * weight) / 24;
-      msg += `<p class="warning">⚠️ Fluid delivery under target by ${fluidDiff.toFixed(1)} mL/kg/day.</p>`;
-      msg += `<p><strong>Suggested IVD rate to meet target:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
+      msg += `<p class="warning">⚠️ Under target by ${fluidDiff.toFixed(1)} mL/kg/day.</p>`;
+      msg += `<p><strong>Suggested IVD rate:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
     } else {
-      msg += `<p class="warning">⚠️ Fluid delivery over target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
+      msg += `<p class="warning">⚠️ Over target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     }
   }
 
