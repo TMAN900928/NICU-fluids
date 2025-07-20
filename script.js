@@ -18,9 +18,9 @@ function calculate() {
   let feedVolumePerDay = 0;
 
   if (feedTypeChoice === "full") {
-    // Calculate 3-hourly feed from total fluid
+    // FULL FEEDS ONLY — calculate feed + GDR
     feedVolumePerDay = (totalFluid * weight);
-    const GDR = ((feedVolumePerDay / 100) * feedComp.carb * 1000) / (weight * 1440); // mg/kg/min
+    const GDR = ((feedVolumePerDay / 100) * feedComp.carb * 10) / (weight * 6); // mg/kg/min
     const perFeed = feedVolumePerDay / 8;
 
     document.getElementById("results").innerHTML = `
@@ -29,17 +29,17 @@ function calculate() {
       <p><strong>Per 3-Hourly Feed:</strong> ${perFeed.toFixed(1)} mL</p>
       <p><strong>Glucose Delivery Rate (GDR):</strong> ${GDR.toFixed(2)} mg/kg/min</p>
     `;
-    return; // Skip PN/IV/lipid
+    return;
   }
 
-  // Partial feeds logic
+  // PARTIAL FEEDS
   const feedVolume = parseFloat(document.getElementById("feedVolume").value);
   const feedInterval = parseInt(document.getElementById("feedInterval").value);
   feedVolumePerDay = (24 / feedInterval) * feedVolume;
   const feedPerKg = feedVolumePerDay / weight;
 
   const kcalFromFeed = (feedPerKg / 100) * feedComp.kcal;
-  const GDRfeed = ((feedVolumePerDay / 100) * feedComp.carb * 1000) / (weight * 1440);
+  const GDRfeed = ((feedVolumePerDay / 100) * feedComp.carb * 10) / (weight * 6);
   const NaFromFeed = (feedComp.Na * feedPerKg) / 1000;
   const KFromFeed = (feedComp.K * feedPerKg) / 1000;
   const CaFromFeed = (feedComp.Ca * feedPerKg) / 100;
@@ -47,34 +47,38 @@ function calculate() {
 
   const remainingFluid = totalFluid - feedPerKg;
 
-  // IV Inputs
-  const ivRate = parseFloat(document.getElementById("ivRate").value) || 0;
+  // IV INPUTS
+  const ivRate = parseFloat(document.getElementById("ivRate").value);
+  if (isNaN(ivRate)) {
+    document.getElementById("results").innerHTML = `<p class="warning">⚠️ Please enter IV rate. If no IV used, enter 0.</p>`;
+    return;
+  }
   const nacl = parseFloat(document.getElementById("nacl").value) || 0;
   const kcl = parseFloat(document.getElementById("kcl").value) || 0;
   const dextrose = parseFloat(document.getElementById("dextrose").value) || 0;
 
   const ivVolumePerDay = ivRate * 24;
   const ivPerKg = ivVolumePerDay / weight;
-  const NaFromIV = (nacl * 1000 * ivVolumePerDay) / (1000 * 1000);
+  const NaFromIV = (nacl * ivPerKg);
   const KFromIV = (kcl / 1000) * (ivVolumePerDay / weight);
   const kcalFromIV = ((dextrose / 100) * ivVolumePerDay * 3.4) / weight;
-  const GDRiv = ((ivRate * dextrose) / (weight * 6));
+  const GDRiv = (ivRate * dextrose) / (weight * 6);
 
-  // PN Inputs
+  // PN INPUTS
   const proteinTarget = Math.min(parseFloat(document.getElementById("protein").value), 4);
   const pnType = document.getElementById("pnType").value;
   const pnData = {
     starter:       { aa: 3.3, glucose: 10, Na: 3, K: 0, Ca: 1.4, Mg: 0.25, Cl: 0, Acetate: 0, Phos: 1.5, TE: 0, kcal: 53.2 },
-    maintenance:   { aa: 3, glucose: 10, Na: 3, K: 2, Ca: 0.15, Mg: 0.22, Cl: 2, Acetate: 0, Phos: 1.5, TE: 0.74, kcal: 52 },
+    maintenance:   { aa: 3.0, glucose: 10, Na: 3, K: 2, Ca: 0.15, Mg: 0.22, Cl: 2, Acetate: 0, Phos: 1.5, TE: 0.74, kcal: 52 },
     concentrated:  { aa: 3.8, glucose: 12.5, Na: 4, K: 2.7, Ca: 0.15, Mg: 0.25, Cl: 2.7, Acetate: 1, Phos: 1.5, TE: 0.74, kcal: 65.2 }
   };
   const pnComp = pnData[pnType];
 
-  const pnRate = Math.min(((proteinTarget * weight * 100) / (pnComp.aa * 24)), (remainingFluid - ivPerKg));
+  const maxPNrate = (remainingFluid - ivPerKg);
+  const pnRate = Math.min(((proteinTarget * weight * 100) / (pnComp.aa * 24)), maxPNrate);
   const actualPNmlPerDay = pnRate * 24;
   const actualPNmlPerKgDay = actualPNmlPerDay / weight;
 
-  // PN Output
   const aa = (actualPNmlPerKgDay / 100) * pnComp.aa;
   const glucose = (actualPNmlPerKgDay / 100) * pnComp.glucose;
   const kcalFromPN = (actualPNmlPerKgDay / 100) * pnComp.kcal;
@@ -89,10 +93,8 @@ function calculate() {
   const PhosFromPN = (actualPNmlPerKgDay / 100) * pnComp.Phos;
   const TE = (actualPNmlPerKgDay / 100) * pnComp.TE;
 
-  // Lipid Autocalculation
-  let lipidRate = 0;
-  let lipidGrams = 0;
-  let lipidKcal = 0;
+  // Lipid Auto
+  let lipidRate = 0, lipidGrams = 0, lipidKcal = 0;
   if (ageHours < 24) {
     lipidRate = 6; lipidGrams = 1.07; lipidKcal = 10.8;
   } else if (ageHours < 48) {
@@ -126,8 +128,8 @@ function calculate() {
     <p><strong>Trace Elements:</strong> ${TE.toFixed(2)} mL/kg/day</p>`;
 
   if (fluidDeficit) {
-    output += `<p class="warning">⚠️ Total fluid delivered: ${totalDelivered.toFixed(1)} < ${totalFluid} mL/kg/day.</p>
-    <p class="warning">💧 Suggest IV drip: ~${suggestedDrip.toFixed(1)} mL/hr to meet fluid goal.</p>`;
+    output += `<p class="warning">⚠️ Fluid delivered is only ${totalDelivered.toFixed(1)} mL/kg/day (less than intended ${totalFluid} mL/kg/day)</p>
+      <p class="warning">💧 Suggest adding IV drip: ~${suggestedDrip.toFixed(1)} mL/hr to match target.</p>`;
   }
 
   document.getElementById("results").innerHTML = output;
