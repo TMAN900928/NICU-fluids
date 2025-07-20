@@ -3,34 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NICU PN + IV + Enteral Calculator</title>
+  <title>NICU Fluid Calculator</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    label { display: block; margin: 10px 0 5px; }
-    input, select, button { width: 100%; padding: 8px; box-sizing: border-box; }
-    .section { margin-bottom: 25px; padding: 10px; border: 1px solid #ccc; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, select { margin: 5px 0; width: 100%; padding: 5px; }
+    .section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
     .warning { color: red; font-weight: bold; }
+    h2, h3 { margin-top: 1em; }
   </style>
 </head>
 <body>
   <h1>NICU Fluid Calculator</h1>
 
   <div class="section">
-    <h2>1. Baby Info</h2>
-    <label>Date & Time of Birth: <input type="datetime-local" id="dob" /></label>
-    <label>Current Date & Time: <input type="datetime-local" id="now" /></label>
-    <label>Birth Weight (kg): <input type="number" id="weight" step="0.01" /></label>
-    <label>Total Fluid Intended (mL/kg/day): <input type="number" id="fluid" step="0.1" /></label>
+    <h3>Patient Details</h3>
+    <label>Date & Time of Birth: <input type="datetime-local" id="dob"></label>
+    <label>Current Date & Time: <input type="datetime-local" id="now"></label>
+    <label>Birth Weight (kg): <input type="number" id="weight" step="0.01"></label>
+    <label>Total Fluid Intended (mL/kg/day): <input type="number" id="fluid" step="0.1"></label>
   </div>
 
   <div class="section">
-    <h2>2. Feeding</h2>
-    <label><input type="radio" name="feedTypeChoice" value="full" checked onclick="toggleSections()"> Full Feeds</label>
-    <label><input type="radio" name="feedTypeChoice" value="partial" onclick="toggleSections()"> Partial Feeds</label>
+    <h3>Feeding</h3>
+    <label><input type="radio" name="feedTypeChoice" value="full" checked> Full Feeds</label><br>
+    <label><input type="radio" name="feedTypeChoice" value="partial"> Not Full Feeds</label>
+
     <div id="feedInputs">
-      <label>Feed Volume per Feed (mL): <input type="number" id="feedVolume" step="1" /></label>
-      <label>Feeding Interval (hours):
-        <select id="feedInterval"><option>1</option><option>2</option><option selected>3</option><option>4</option></select>
+      <label>Feed Volume per feed (mL): <input type="number" id="feedVolume" step="0.1"></label>
+      <label>Feed Interval (hours): 
+        <select id="feedInterval">
+          <option value="">Select</option>
+          <option value="1">Hourly</option>
+          <option value="2">2-hourly</option>
+          <option value="3">3-hourly</option>
+          <option value="4">4-hourly</option>
+        </select>
       </label>
       <label>Feed Type:
         <select id="feedTypeSelect">
@@ -40,55 +47,35 @@
           <option value="standard_formula">Standard Formula</option>
         </select>
       </label>
+      <div id="feedPreview"></div>
     </div>
   </div>
 
   <div class="section" id="pnSection">
-    <h2>3. Parenteral Nutrition (PN)</h2>
-    <label>Protein Target (g/kg/day): <input type="number" id="protein" step="0.1" /></label>
+    <h3>Parenteral Nutrition</h3>
     <label>PN Type:
       <select id="pnType">
         <option value="starter">Starter PN</option>
-        <option value="maintenance">Maintenance (no acetate)</option>
-        <option value="concentrated">Concentrated (with acetate)</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="concentrated">Maintenance with Acetate</option>
       </select>
     </label>
+    <label>Protein Target (g/kg/day): <input type="number" id="protein" step="0.1"></label>
+    <label>Lipid Target (g/kg/day): <input type="number" id="lipidTarget" step="0.1" value="0"></label>
   </div>
 
-  <div class="section" id="lipidSection">
-    <h2>4. Lipid</h2>
-    <label>Lipid Target (g/kg/day): <input type="number" id="lipidTarget" step="0.01" /></label>
-  </div>
-
-  <div class="section" id="ivSection">
-    <h2>5. IV Drip</h2>
-    <label>IV Rate (mL/hr): <input type="number" id="ivRate" step="0.1" /></label>
-    <label>Sodium Strength:
-      <select id="nacl">
-        <option value="0">None</option>
-        <option value="0.2">1/5 NS (0.2%)</option>
-        <option value="0.45">½ NS (0.45%)</option>
-        <option value="0.9">NS (0.9%)</option>
-        <option value="3">HS (3%)</option>
-      </select>
-    </label>
-    <label>KCl added (mmol/pint): <input type="number" id="kcl" step="0.1" /></label>
-    <label>Dextrose %: <input type="number" id="dextrose" step="1" /></label>
+  <div class="section">
+    <h3>IV Drip (if used)</h3>
+    <label>IV Rate (mL/hr): <input type="number" id="ivRate" step="0.1" placeholder="Enter 0 if not used"></label>
+    <label>Sodium Chloride Strength (%): <input type="number" id="nacl" step="0.1" placeholder="e.g. 0.2 for 1/5 NS"></label>
+    <label>KCl Added (mmol/pint): <input type="number" id="kcl" step="1"></label>
+    <label>Dextrose %: <input type="number" id="dextrose" step="1"></label>
   </div>
 
   <button onclick="calculate()">Calculate</button>
-  <div id="results"></div>
+
+  <div id="results" class="section"></div>
 
   <script src="script.js"></script>
-  <script>
-    function toggleSections() {
-      const partial = document.querySelector('input[name="feedTypeChoice"]:checked').value === 'partial';
-      document.getElementById('feedInputs').style.display = partial ? 'block' : 'none';
-      document.getElementById('pnSection').style.display = partial ? 'block' : 'none';
-      document.getElementById('lipidSection').style.display = partial ? 'block' : 'none';
-      document.getElementById('ivSection').style.display = partial ? 'block' : 'none';
-    }
-    window.onload = toggleSections;
-  </script>
 </body>
 </html>
