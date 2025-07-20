@@ -40,7 +40,6 @@ function calculate() {
 
   const feedComp = feedData[feedType];
 
-  // Total feed/day mL
   const feedPerDay = feedChoice === 'full' ? (totalFluid * weight) : (24 / feedInterval) * feedVolume;
   const feedPerKg = feedPerDay / weight;
 
@@ -61,7 +60,7 @@ function calculate() {
   const lipidCap = day === 1 ? 6 : day === 2 ? 12 : 18;
   const cappedProtein = Math.min(proteinTarget, protCap);
   const cappedLipid = Math.min(lipidTarget, lipidCap);
-  const lipidVol = cappedLipid / 0.178; // mL/kg/day
+  const lipidVol = cappedLipid > 0 ? cappedLipid / 0.178 : 0;
 
   const remAfterFeed = totalFluid - feedPerKg;
 
@@ -72,7 +71,10 @@ function calculate() {
   const pnVolume = pnRate * 24;
   const pnPerKg = pnVolume / weight;
 
-  const lipidAllowance = Math.min(totalFluid - feedPerKg - pnPerKg, lipidVol);
+  const lipidAllowance = cappedLipid > 0
+    ? Math.min(totalFluid - feedPerKg - pnPerKg, lipidVol)
+    : 0;
+
   const ivAllowance = totalFluid - feedPerKg - pnPerKg - lipidAllowance;
   const ivRateFinal = ivAllowance > 0 ? (ivAllowance * weight) / 24 : 0;
 
@@ -101,6 +103,15 @@ function calculate() {
   const fluidDef = totalDelivered < totalFluid;
   const suggestIV = fluidDef ? `⚠️ Delivered only ${totalDelivered.toFixed(1)} mL/kg/day.<br>To meet target, add IV at ${( ((totalFluid - totalDelivered) * weight) / 24 ).toFixed(1)} mL/hr.` : '';
 
+  // Show warnings if lipidTarget > cap
+  const warnings = [];
+  if (lipidTarget > lipidCap) {
+    warnings.push(`⚠️ Lipid target (${lipidTarget} g/kg/day) exceeds cap for Day ${day} (${lipidCap} g/kg/day).`);
+  }
+  if (proteinTarget > protCap) {
+    warnings.push(`⚠️ Protein target (${proteinTarget} g/kg/day) exceeds cap for Day ${day} (${protCap} g/kg/day).`);
+  }
+
   document.getElementById('results').innerHTML = `
     <h2>Partial Feeds + PN + Lipid + IVD</h2>
     <p><strong>Day of Life:</strong> ${day}</p>
@@ -121,6 +132,7 @@ function calculate() {
       <li>Chloride: ${Cl_pn.toFixed(2)}</li>
       <li>Trace Elements: ${TE.toFixed(2)} mL/kg/day</li>
     </ul>
+    ${warnings.map(w => `<p class="warning">${w}</p>`).join("")}
     ${fluidDef ? `<p class="warning">${suggestIV}</p>` : ''}
   `;
 }
