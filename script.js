@@ -128,7 +128,7 @@ function calculate() {
     if (fluidDiff > 0) {
       const rateNeeded = (fluidDiff * weight) / 24;
       msg += `<p class="warning">⚠️ Under target by ${fluidDiff.toFixed(1)} mL/kg/day.</p>`;
-      msg += `<p><strong>Suggested IVD rate:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
+      msg += `<p><strong>Suggest to increase IVD rate by:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
     } else {
       msg += `<p class="warning">⚠️ Over target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     }
