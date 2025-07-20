@@ -102,4 +102,33 @@ function calculate() {
   }
 
   const totalDelivered = feedPerKg + ivPerKg + actualPNmlPerKgDay;
-  const fluidDeficit = totalDelivered < totalFluid
+  const fluidDeficit = totalDelivered < totalFluid;
+  const suggestedDrip = ((totalFluid - totalDelivered) * weight) / 24;
+
+  let output = `<h2>Partial Feeds Summary</h2>
+    <p><strong>Feed Volume:</strong> ${feedPerKg.toFixed(1)} mL/kg/day</p>
+    <p><strong>IV Volume:</strong> ${ivPerKg.toFixed(1)} mL/kg/day</p>
+    <p><strong>PN Volume:</strong> ${actualPNmlPerKgDay.toFixed(1)} mL/kg/day</p>
+    <p><strong>Lipid Volume:</strong> ${lipidRate.toFixed(1)} mL/kg/day</p>
+    <p><strong>Calories:</strong> ${(kcalFromFeed + kcalFromIV + kcalFromPN + lipidKcal).toFixed(1)} kcal/kg/day</p>
+    <p><strong>GDR:</strong> ${(GDRfeed + GDRiv + GDRpn).toFixed(2)} mg/kg/min</p>
+    <p><strong>Protein Delivered:</strong> ${aa.toFixed(2)} g/kg/day</p>
+    <p><strong>Lipid Delivered:</strong> ${lipidGrams.toFixed(2)} g/kg/day</p>
+
+    <h3>Electrolytes & Micronutrients</h3>
+    <p><strong>Sodium:</strong> ${(NaFromFeed + NaFromIV + NaFromPN).toFixed(2)} mmol/kg/day</p>
+    <p><strong>Potassium:</strong> ${(KFromFeed + KFromIV + KFromPN).toFixed(2)} mmol/kg/day</p>
+    <p><strong>Calcium:</strong> ${(CaFromFeed + CaFromPN).toFixed(2)} mmol/kg/day</p>
+    <p><strong>Phosphate:</strong> ${(PhosFromFeed + PhosFromPN).toFixed(2)} mmol/kg/day</p>
+    <p><strong>Magnesium:</strong> ${MgFromPN.toFixed(2)} mmol/kg/day</p>
+    <p><strong>Acetate:</strong> ${Acetate.toFixed(2)} mmol/kg/day</p>
+    <p><strong>Chloride:</strong> ${ClFromPN.toFixed(2)} mmol/kg/day</p>
+    <p><strong>Trace Elements:</strong> ${TE.toFixed(2)} mL/kg/day</p>`;
+
+  if (fluidDeficit) {
+    output += `<p class="warning">⚠️ Total fluid delivered: ${totalDelivered.toFixed(1)} < ${totalFluid} mL/kg/day.</p>
+    <p class="warning">💧 Suggest IV drip: ~${suggestedDrip.toFixed(1)} mL/hr to meet fluid goal.</p>`;
+  }
+
+  document.getElementById("results").innerHTML = output;
+}
