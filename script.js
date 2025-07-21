@@ -46,7 +46,7 @@ function calculate() {
 
   let feedPerDay = 0;
   if (feedChoice === 'full') {
-    feedPerDay = (totalFluid * weight); // Full feeds = all fluid is enteral
+    feedPerDay = totalFluid * weight;
   } else {
     const feedVolume = parseFloat(document.getElementById('feedVolume').value) || 0;
     const feedInterval = parseFloat(document.getElementById('feedInterval').value) || 3;
@@ -55,7 +55,8 @@ function calculate() {
 
   const feedPerKg = feedPerDay / weight;
   const feedKcal = (feedPerDay * feedComp.kcal) / weight / 100;
-  const GDRfeed = ((feedPerDay / 100) * feedComp.carb * 1000) / (weight * 1440);
+  const feedRate = feedPerDay / 24;
+  const GDRfeed = (feedRate * feedComp.carb * 10) / (weight * 6); // bedside formula
 
   if (feedChoice === 'full') {
     document.getElementById('results').innerHTML = `
@@ -80,7 +81,7 @@ function calculate() {
 
   const proteinTarget = Math.min(parseFloat(document.getElementById('protein').value) || 0, maxProtein);
   const lipidTargetG = parseFloat(document.getElementById('lipidTarget').value) || 0;
-  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178); // 1g = 5.6 mL
+  const lipidTarget = Math.min(lipidTargetG, maxLipid * 0.178);
 
   const ivRate = parseFloat(document.getElementById('ivRate').value);
   let nacl = parseFloat(document.getElementById('nacl').value);
@@ -108,8 +109,8 @@ function calculate() {
   const lipidRate = (lipidVolume * weight) / 24;
 
   const ivVolume = (ivRate * 24) / weight;
-  const GDRivd = ((ivVolume / 100) * dextrose * 1000) / (weight * 1440);
-  const GDRpn = ((pnVolume / 100) * pn.gl * 1000) / (weight * 1440);
+  const GDRivd = (ivRate * dextrose * 10) / (weight * 6); // bedside formula
+  const GDRpn = (pnRate * pn.gl * 10) / (weight * 6);     // bedside formula
 
   const totalDelivered = feedPerKg + pnVolume + lipidVolume + ivVolume;
   const fluidDiff = totalFluid - totalDelivered;
@@ -128,7 +129,7 @@ function calculate() {
     if (fluidDiff > 0) {
       const rateNeeded = (fluidDiff * weight) / 24;
       msg += `<p class="warning">⚠️ Under target by ${fluidDiff.toFixed(1)} mL/kg/day.</p>`;
-      msg += `<p><strong>Suggest to increase IVD rate by:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
+      msg += `<p><strong>Suggested IVD rate:</strong> ${rateNeeded.toFixed(1)} mL/hr</p>`;
     } else {
       msg += `<p class="warning">⚠️ Over target by ${Math.abs(fluidDiff).toFixed(1)} mL/kg/day.</p>`;
     }
