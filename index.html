@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>NICU PN + IV Calculator</title>
+  <title>NICU PN + IV + Feeding Calculator</title>
   <style>
     body { font-family: Arial; padding: 20px; background: #f9f9f9; }
     label { display: block; margin-top: 10px; font-weight: bold; }
@@ -14,21 +14,18 @@
   </style>
 </head>
 <body>
-  <h1>NICU PN + IV Calculator</h1>
+  <h1>NICU PN + IV + Feeding Calculator</h1>
+
+  <label>Date of Birth:</label>
+  <input type="date" id="dob" />
+
+  <label>Current Date (optional):</label>
+  <input type="date" id="now" />
 
   <label>Weight (kg):</label>
   <input type="number" step="0.01" id="weight" />
 
-  <label>Day of Life (DOL):</label>
-  <input type="number" id="dol" />
-
-  <label>Age (in months):</label>
-  <input type="number" id="ageMonths" />
-
-  <label>Recommended Fluid (mL/kg/day):</label>
-  <input type="number" id="recommendedFluid" disabled />
-
-  <label>User Intended Total Fluid (mL/day):</label>
+  <label>Intended Total Fluid (mL/day):</label>
   <input type="number" id="intendedFluid" />
 
   <label>PN Type:</label>
@@ -51,15 +48,23 @@
   <h2>IV Drip</h2>
   <label>IV Dextrose (%):</label>
   <input type="number" step="0.1" id="ivDextrose" />
-
   <label>IV Rate (mL/h):</label>
   <input type="number" step="0.1" id="ivRate" />
-
   <label>KCl in IV (mmol/L):</label>
   <input type="number" step="0.1" id="ivKcl" value="0" />
 
-  <button onclick="calculate()">Calculate</button>
+  <h2>Enteral Feeding</h2>
+  <label>Feed Type:</label>
+  <select id="feedType">
+    <option value="EBM">EBM</option>
+    <option value="Formula">Formula</option>
+  </select>
+  <label>Feed Volume per feed (mL):</label>
+  <input type="number" step="1" id="feedVolume" />
+  <label>Feed Interval (hours):</label>
+  <input type="number" step="1" id="feedInterval" />
 
+  <button onclick="calculate()">Calculate</button>
   <div id="results" class="output"></div>
 
   <script src="script.js"></script>
