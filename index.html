@@ -1,75 +1,132 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>NICU PN + IV + Feeding Calculator</title>
-  <style>
-    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select { width: 100%; padding: 5px; margin-bottom: 10px; }
-    .row { display: flex; gap: 10px; }
-    .row label { flex: 1; }
-    .warning { color: red; font-weight: bold; margin-top: 10px; }
-    .output { margin-top: 20px; background: #fff; padding: 10px; border: 1px solid #ccc; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NICU Fluids Calculator</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>NICU PN + IV + Feeding Calculator</h1>
 
-  <label>Date of Birth:</label>
-  <input type="date" id="dob" required />
+<div class="container">
+  <h1>NICU Fluids Calculator</h1>
 
-  <label>Current Date:</label>
-  <input type="date" id="now" required />
+  <div class="card">
+    <h2>Patient Details</h2>
 
-  <label>Weight (kg):</label>
-  <input type="number" step="0.01" id="weight" required />
+    <label>Weight (kg)*</label>
+    <input type="number" id="weight" step="0.01">
 
-  <label id="fluidLabel">Intended Fluid (mL/kg/day or %):</label>
-  <input type="number" id="intendedFluid" required />
+    <label>Day of Life*</label>
+    <input type="number" id="dol">
 
-  <label>PN Type:</label>
-  <select id="pnType">
-    <option value="">Select</option>
-    <option value="starter">Starter</option>
-    <option value="maintenance">Maintenance</option>
-    <option value="concentrated">Concentrated</option>
-  </select>
-
-  <div class="row">
-    <label>Protein (g/kg/day): <input type="number" step="0.1" id="proteinG" required /></label>
-    <label>Protein Rate (mL/h): <input type="number" step="0.1" id="proteinRate" required /></label>
+    <label>Total Fluid Target (ml/kg/day)*</label>
+    <input type="number" id="targetFluid">
   </div>
 
-  <div class="row">
-    <label>Lipid (g/kg/day): <input type="number" step="0.1" id="lipidG" required /></label>
-    <label>Lipid Rate (mL/h): <input type="number" step="0.1" id="lipidRate" required /></label>
+  <div class="card">
+    <h2>Feeding</h2>
+
+    <label>Feeding Type*</label>
+    <select id="feedingType">
+      <option>Full Feeding</option>
+      <option>Increment Feeding</option>
+      <option>NBM</option>
+    </select>
+
+    <label>Milk Type*</label>
+    <select id="milkType">
+      <option>Standard Formula</option>
+      <option>Mature Breastmilk</option>
+      <option>Preterm Formula</option>
+      <option>Preterm Breastmilk</option>
+      <option>Cow Milk</option>
+    </select>
+
+    <label>Feed Volume (ml)</label>
+    <input type="number" id="feedVol">
+
+    <label>Feed Interval (hours)</label>
+    <input type="number" id="feedInterval">
   </div>
 
-  <h2>IV Drip</h2>
-  <label>IV Dextrose (%):</label>
-  <input type="number" step="0.1" id="ivDextrose" required />
-  <label>IV Rate (mL/h):</label>
-  <input type="number" step="0.1" id="ivRate" required />
-  <label>KCl in IV (mmol/L):</label>
-  <input type="number" step="0.1" id="ivKcl" value="0" required />
+  <div class="card" id="pnSection">
 
-  <h2>Enteral Feeding</h2>
-  <label>Feed Type:</label>
-  <select id="feedType">
-    <option value="">Select</option>
-    <option value="EBM">EBM</option>
-    <option value="Formula">Formula</option>
-  </select>
-  <label>Feed Volume per feed (mL):</label>
-  <input type="number" step="1" id="feedVolume" required />
-  <label>Feed Interval (hours):</label>
-  <input type="number" step="1" id="feedInterval" required />
+    <h2>PN</h2>
+
+    <label>PN Type*</label>
+    <select id="pnType">
+      <option>Type A</option>
+      <option>Type B</option>
+      <option>Type C</option>
+    </select>
+
+    <label>Protein (g/kg/day)</label>
+    <input type="number" id="proteinDose" step="0.1">
+
+    <label>PN Rate (ml/hr)</label>
+    <input type="number" id="pnRate" step="0.1">
+
+    <h2>Lipid</h2>
+
+    <label>Lipid Dose (g/kg/day)</label>
+    <input type="number" id="lipidDose" step="0.1">
+
+    <label>Lipid Rate (ml/hr)</label>
+    <input type="number" id="lipidRate" step="0.1">
+
+  </div>
+
+  <div class="card" id="ivdSection">
+
+    <h2>IVD</h2>
+
+    <label>IVD Type*</label>
+    <select id="ivdType">
+      <option>1/5NS</option>
+      <option>HS</option>
+      <option>NS</option>
+      <option>3% Saline</option>
+      <option>HM</option>
+      <option>No Drip</option>
+    </select>
+
+    <label>Dextrose (%)</label>
+    <input type="number" id="dextrose">
+
+    <label>IVD Rate (ml/hr)</label>
+    <input type="number" id="ivdRate" step="0.1">
+
+  </div>
 
   <button onclick="calculate()">Calculate</button>
 
-  <div id="results" class="output"></div>
+  <div class="card output">
 
-  <script src="script.js"></script>
+    <h2>Results</h2>
+
+    <p id="totalFluidOut"></p>
+    <p id="gdrOut"></p>
+    <p id="caloriesOut"></p>
+    <p id="proteinOut"></p>
+    <p id="lipidOut"></p>
+
+    <h3>Electrolytes</h3>
+
+    <p id="naOut"></p>
+    <p id="kOut"></p>
+    <p id="clOut"></p>
+    <p id="caOut"></p>
+    <p id="phosOut"></p>
+    <p id="mgOut"></p>
+    <p id="acetateOut"></p>
+
+    <p id="warning"></p>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>
