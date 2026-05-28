@@ -1,0 +1,45 @@
+body{
+  font-family: Arial;
+  background:#f3f3f3;
+  margin:0;
+  padding:20px;
+}
+
+.container{
+  max-width:700px;
+  margin:auto;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
+
+h1,h2{
+  color:#3f2b7a;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-bottom:15px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:15px;
+  background:#3f2b7a;
+  color:white;
+  border:none;
+  border-radius:10px;
+  font-size:18px;
+}
+
+.output p{
+  font-weight:bold;
+}
